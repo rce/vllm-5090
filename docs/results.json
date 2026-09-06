@@ -173,6 +173,14 @@
       "status": "oom_at_startup",
       "config": "SPEC_DECODE=1 with the vision tower loaded",
       "reason": "Needs exactly 2.37 GiB = 248,320 x 5,120 in BF16. vllm/model_executor/models/qwen3_5_mtp.py gives the draft head its own VocabParallelEmbedding even though the checkpoint sets mtp_use_dedicated_embeddings: false. Lowering GPU_MEMORY_UTILIZATION does not help: the allocation happens after profiling, outside the budget."
+    },
+    {
+      "id": "qwen38-mtp-plus-cudagraphs",
+      "checkpoint": "Inferact/Qwen3.8-27B-NVFP4",
+      "precision": "NVFP4",
+      "status": "insufficient_kv",
+      "config": "SPEC_DECODE=1 LANGUAGE_MODEL_ONLY=1 ENFORCE_EAGER=0",
+      "reason": "MTP and CUDA graphs want the same couple of gigabytes and cannot both fit. At 32K context the KV cache is squeezed to 0.81 GiB against the 1.87 GiB one full-length sequence needs; at 16K context with graph capture capped at 16 it is 1.2 GiB against 1.35 GiB. The engine refuses to start with a clear ValueError rather than failing later. Pick one: MTP for single-stream latency, graphs for concurrency."
     }
   ],
   "sweeps": [
@@ -916,6 +924,222 @@
         }
       ],
       "notes": "SPEC_DECODE=1 LANGUAGE_MODEL_ONLY=1, MAX_NUM_SEQS=8 (profile default); KV pool 70,087 tokens"
+    },
+    {
+      "label": "qwen3.8-27b text-only, CUDA graphs",
+      "model": "Qwen3.8-27B",
+      "base_url": "http://127.0.0.1:8000",
+      "generated": "2026-09-06",
+      "vllm_version": "0.28.0",
+      "max_model_len": 32768,
+      "workload": {
+        "prompt_words": 700,
+        "output_tokens": 256,
+        "rounds": 2,
+        "ignore_eos": true,
+        "thinking": false
+      },
+      "levels": [
+        {
+          "concurrency": 1,
+          "requests": 2,
+          "succeeded": 2,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 786,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.0856,
+          "ttft_p95_s": 0.086,
+          "decode_tok_s_per_stream": 62.2,
+          "total_tok_s": 61.1,
+          "latency_p50_s": 4.187,
+          "latency_p95_s": 4.187
+        },
+        {
+          "concurrency": 2,
+          "requests": 4,
+          "succeeded": 4,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 786,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.1537,
+          "ttft_p95_s": 0.1656,
+          "decode_tok_s_per_stream": 55.2,
+          "total_tok_s": 107.0,
+          "latency_p50_s": 4.774,
+          "latency_p95_s": 4.784
+        },
+        {
+          "concurrency": 4,
+          "requests": 8,
+          "succeeded": 8,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 786,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.2776,
+          "ttft_p95_s": 0.3148,
+          "decode_tok_s_per_stream": 53.7,
+          "total_tok_s": 203.1,
+          "latency_p50_s": 5.025,
+          "latency_p95_s": 5.04
+        },
+        {
+          "concurrency": 8,
+          "requests": 16,
+          "succeeded": 16,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 787,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.4669,
+          "ttft_p95_s": 0.6186,
+          "decode_tok_s_per_stream": 53.9,
+          "total_tok_s": 391.5,
+          "latency_p50_s": 5.195,
+          "latency_p95_s": 5.228
+        },
+        {
+          "concurrency": 16,
+          "requests": 32,
+          "succeeded": 32,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 787,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.738,
+          "ttft_p95_s": 5.8675,
+          "decode_tok_s_per_stream": 49.9,
+          "total_tok_s": 393.7,
+          "latency_p50_s": 5.851,
+          "latency_p95_s": 10.393
+        },
+        {
+          "concurrency": 32,
+          "requests": 64,
+          "succeeded": 64,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 787,
+          "output_tokens": 256,
+          "ttft_p50_s": 6.0525,
+          "ttft_p95_s": 15.6831,
+          "decode_tok_s_per_stream": 49.8,
+          "total_tok_s": 388.8,
+          "latency_p50_s": 11.17,
+          "latency_p95_s": 20.358
+        }
+      ],
+      "notes": "ENFORCE_EAGER=0 LANGUAGE_MODEL_ONLY=1 MAX_NUM_SEQS=32; no MTP; KV pool 53,399 tokens"
+    },
+    {
+      "label": "qwen3.8-27b text-only, eager",
+      "model": "Qwen3.8-27B",
+      "base_url": "http://127.0.0.1:8000",
+      "generated": "2026-09-06",
+      "vllm_version": "0.28.0",
+      "max_model_len": 32768,
+      "workload": {
+        "prompt_words": 700,
+        "output_tokens": 256,
+        "rounds": 2,
+        "ignore_eos": true,
+        "thinking": false
+      },
+      "levels": [
+        {
+          "concurrency": 1,
+          "requests": 2,
+          "succeeded": 2,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 786,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.1161,
+          "ttft_p95_s": 0.1161,
+          "decode_tok_s_per_stream": 26.5,
+          "total_tok_s": 26.3,
+          "latency_p50_s": 9.728,
+          "latency_p95_s": 9.749
+        },
+        {
+          "concurrency": 2,
+          "requests": 4,
+          "succeeded": 4,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 786,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.1822,
+          "ttft_p95_s": 0.5125,
+          "decode_tok_s_per_stream": 25.3,
+          "total_tok_s": 49.1,
+          "latency_p50_s": 10.434,
+          "latency_p95_s": 10.638
+        },
+        {
+          "concurrency": 4,
+          "requests": 8,
+          "succeeded": 8,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 786,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.325,
+          "ttft_p95_s": 0.3736,
+          "decode_tok_s_per_stream": 25.3,
+          "total_tok_s": 98.3,
+          "latency_p50_s": 10.406,
+          "latency_p95_s": 10.416
+        },
+        {
+          "concurrency": 8,
+          "requests": 16,
+          "succeeded": 16,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 787,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.5514,
+          "ttft_p95_s": 0.7255,
+          "decode_tok_s_per_stream": 24.9,
+          "total_tok_s": 189.4,
+          "latency_p50_s": 10.771,
+          "latency_p95_s": 10.853
+        },
+        {
+          "concurrency": 16,
+          "requests": 32,
+          "succeeded": 32,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 787,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.8925,
+          "ttft_p95_s": 1.3693,
+          "decode_tok_s_per_stream": 24.2,
+          "total_tok_s": 354.4,
+          "latency_p50_s": 11.439,
+          "latency_p95_s": 11.589
+        },
+        {
+          "concurrency": 32,
+          "requests": 64,
+          "succeeded": 64,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 787,
+          "output_tokens": 256,
+          "ttft_p50_s": 1.5847,
+          "ttft_p95_s": 12.6853,
+          "decode_tok_s_per_stream": 22.7,
+          "total_tok_s": 358.9,
+          "latency_p50_s": 12.81,
+          "latency_p95_s": 22.845
+        }
+      ],
+      "notes": "control for the CUDA graphs test: LANGUAGE_MODEL_ONLY=1 MAX_NUM_SEQS=32, ENFORCE_EAGER=1; no MTP; KV pool 121,362 tokens"
     }
   ]
 }
