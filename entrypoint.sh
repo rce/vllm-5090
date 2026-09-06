@@ -14,10 +14,10 @@ args=(
   --max-num-seqs "$MAX_NUM_SEQS"
   --gpu-memory-utilization "$GPU_MEMORY_UTILIZATION"
   --kv-cache-dtype "$KV_CACHE_DTYPE"
-  # Both Qwen3.x chat templates open every assistant turn with <think>; without
-  # this the whole reasoning block lands in message.content rather than in a
-  # separate `reasoning` field.
-  --reasoning-parser qwen3
+  # These chat templates open every assistant turn with a thinking block;
+  # without the right parser the whole thing lands in message.content rather
+  # than in a separate `reasoning` field. The parser is per-model.
+  --reasoning-parser "$REASONING_PARSER"
   --enable-auto-tool-choice
   --tool-call-parser "$TOOL_CALL_PARSER"
 )

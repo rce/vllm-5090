@@ -1212,6 +1212,122 @@
         "graphs": "off",
         "mtp": "off"
       }
+    },
+    {
+      "label": "nemotron-3.5-lightning",
+      "model": "Nemotron-3.5-Lightning-30B-A3B",
+      "base_url": "http://127.0.0.1:8000",
+      "generated": "2026-09-06",
+      "vllm_version": "0.28.0",
+      "max_model_len": 65536,
+      "workload": {
+        "prompt_words": 700,
+        "output_tokens": 256,
+        "rounds": 2,
+        "ignore_eos": true,
+        "thinking": false
+      },
+      "levels": [
+        {
+          "concurrency": 1,
+          "requests": 2,
+          "succeeded": 2,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 808,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.0468,
+          "ttft_p95_s": 0.0469,
+          "decode_tok_s_per_stream": 387.5,
+          "total_tok_s": 362.9,
+          "latency_p50_s": 0.705,
+          "latency_p95_s": 0.705
+        },
+        {
+          "concurrency": 2,
+          "requests": 4,
+          "succeeded": 4,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 808,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.188,
+          "ttft_p95_s": 0.2841,
+          "decode_tok_s_per_stream": 295.2,
+          "total_tok_s": 486.2,
+          "latency_p50_s": 1.052,
+          "latency_p95_s": 1.153
+        },
+        {
+          "concurrency": 4,
+          "requests": 8,
+          "succeeded": 8,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 808,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.18,
+          "ttft_p95_s": 0.192,
+          "decode_tok_s_per_stream": 246.0,
+          "total_tok_s": 837.1,
+          "latency_p50_s": 1.22,
+          "latency_p95_s": 1.226
+        },
+        {
+          "concurrency": 8,
+          "requests": 16,
+          "succeeded": 16,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 809,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.1891,
+          "ttft_p95_s": 0.2838,
+          "decode_tok_s_per_stream": 186.8,
+          "total_tok_s": 1292.8,
+          "latency_p50_s": 1.577,
+          "latency_p95_s": 1.608
+        },
+        {
+          "concurrency": 16,
+          "requests": 32,
+          "succeeded": 32,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 809,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.3013,
+          "ttft_p95_s": 0.4995,
+          "decode_tok_s_per_stream": 136.2,
+          "total_tok_s": 1873.4,
+          "latency_p50_s": 2.174,
+          "latency_p95_s": 2.184
+        },
+        {
+          "concurrency": 32,
+          "requests": 64,
+          "succeeded": 64,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 809,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.5213,
+          "ttft_p95_s": 0.9858,
+          "decode_tok_s_per_stream": 100.7,
+          "total_tok_s": 2652.4,
+          "latency_p50_s": 3.057,
+          "latency_p95_s": 3.087
+        }
+      ],
+      "dimensions": {
+        "model": "Nemotron-3.5-Lightning-30B-A3B",
+        "prompt": "808 tok",
+        "seqs": "32",
+        "vision": "off",
+        "graphs": "on",
+        "mtp": "off"
+      },
+      "notes": "profiles/nemotron-3.5-lightning.env; MoE 30B/3B active, Mamba hybrid; KV pool 1,497,245 tokens"
     }
   ]
 }
