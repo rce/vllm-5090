@@ -24,7 +24,10 @@ import os
 import sys
 import time
 
-import torch
+try:
+    import torch
+except ImportError:  # generate.py's host-side client imports this for MODELS only
+    torch = None
 
 PROMPT = ("A red vintage bicycle leans against a whitewashed wall in a narrow "
           "Mediterranean street at golden hour; a tabby cat walks past, pauses, "

@@ -6,20 +6,40 @@
 #   ./generate-video wan2.2-5b-turbo "..." --size 640x352
 #   ./generate-video --help
 #
-# Clips land in video/gen/ unless --out says otherwise. Same container and
-# mounts as video.sh; see generate.py for the options.
+# Loading the model is most of the wait for a short clip. To load it once:
+#
+#   ./generate-video serve ltx-2.5        # in another terminal; Ctrl-C to stop
+#
+# and every generate-video call for that model then goes to the server
+# instead of starting a container. Clips land in video/gen/ unless --out
+# says otherwise. Same container and mounts as video.sh; see generate.py.
 set -euo pipefail
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+PORT=8765
+
+serve=(); pub=(); name=generate-video
+if [[ "${1:-}" == serve ]]; then
+  shift
+  serve=(--serve); pub=(-p "127.0.0.1:$PORT:$PORT"); name=generate-video-serve
+elif [[ -n "${1:-}" && "$1" != -* ]]; then
+  # A server holding this model takes the request; the client is stdlib-only.
+  held=$(curl -sf --max-time 1 "http://127.0.0.1:$PORT/" 2>/dev/null | sed -n 's/.*"model": *"\([^"]*\)".*/\1/p' || true)
+  if [[ -n "$held" && "$held" == "$1" ]]; then
+    exec python3 "$HERE/generate.py" --client "$@"
+  fi
+fi
+
 tty=(); [[ -t 0 ]] && tty=(-t)
 exec podman run --rm -i "${tty[@]}" \
-  --name "${NAME:-generate-video}" \
+  --name "$name" \
   --device nvidia.com/gpu=all \
   --security-opt=label=disable \
   --ipc=host \
+  "${pub[@]}" \
   -v "${HF_HOME:-$HOME/.cache/huggingface}:/root/.cache/huggingface" \
   -v "$HERE:/work" \
   -v /etc/localtime:/etc/localtime:ro \
   ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
   --entrypoint python3 \
   "${IMAGE:-localhost/video-5090:latest}" \
-  /work/generate.py "$@"
+  /work/generate.py "${serve[@]}" "$@"

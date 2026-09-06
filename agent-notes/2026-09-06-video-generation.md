@@ -310,3 +310,16 @@ For actually making a clip rather than measuring one, `generate-video` runs
 It prints the same denoise / decode / peak-VRAM line as the sweep and writes
 to `video/gen/` (untracked) by default. Expect ~25 s of loading before the
 clip on LTX (12 s of it is Gemma-12B encoding the prompt).
+
+To pay the loading once, `./generate-video serve ltx-2.5` keeps the
+generator on the GPU (port 8765, localhost only) and the same commands then
+go to it. Prompt embeddings are cached in `video/cache/` (untracked; a few
+MB per prompt), so a prompt already seen costs only the clip: 17 s for a
+5 s 960×544 clip, 2.8 s for a 2 s 640×352 / 12 fps one. A new prompt still
+needs Gemma-12B, which does not fit beside the generator; the server parks
+the generator in host RAM (3.4 s out, 1.5 s back, `malloc_trim` after so
+the 20 GB is returned) while the encoder streams through, or drops and
+reloads it (13 s) when there is not the RAM for that — this host has no
+swap, so the check is against `MemAvailable` with a 3 GB margin. Both paths
+were exercised. Wan Turbo's umT5 would fit beside its generator, but it is
+handled the same way for now.
