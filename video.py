@@ -58,7 +58,51 @@ def load_wan(repo, dtype, skip):
 
 def load_ltx2(repo, dtype, skip):
     from diffusers import LTX2Pipeline
+    # Never needed here: the prompt enhancer (a second Gemma), the duration
+    # head (num_frames is always given) and the processor that serves them.
+    skip = dict(skip, prompt_enhancer=None, duration_head=None, processor=None)
+    if "transformer" not in skip:
+        skip = dict(skip, transformer=load_ltx2_transformer(repo))
     return LTX2Pipeline.from_pretrained(repo, torch_dtype=dtype, **skip)
+
+
+def load_ltx2_transformer(repo):
+    """The 22B distilled DiT in fp8, with bf16 compute.
+
+    In bf16 it is 35 GB: over this card's 32 GB and over the host's 30 GB of
+    RAM, so it cannot even be loaded to be quantised. Stream it in as fp8
+    (18 GB) straight onto the GPU, then let diffusers' layerwise casting
+    upcast each linear layer to bf16 for its own forward. Everything that is
+    not a linear/conv parameter -- norms, the adaLN tables -- is reloaded in
+    bf16 afterwards: fp8's three mantissa bits are a poor home for them, and
+    the casting hooks do not touch them anyway.
+    """
+    from diffusers import LTX2VideoTransformer3DModel
+    from huggingface_hub import hf_hub_download
+    from safetensors import safe_open
+
+    fp8 = torch.float8_e4m3fn
+    model = LTX2VideoTransformer3DModel.from_pretrained(repo, subfolder="transformer", torch_dtype=fp8,
+                                                        device_map="cuda")
+    hooked = (torch.nn.Linear, torch.nn.Conv1d, torch.nn.Conv2d, torch.nn.Conv3d)
+    keep_fp8 = {f"{name}.{p}" for name, mod in model.named_modules() if isinstance(mod, hooked)
+                for p, _ in mod.named_parameters(recurse=False)}
+    params = dict(model.named_parameters())
+    with open(hf_hub_download(repo, "diffusion_pytorch_model.safetensors.index.json", subfolder="transformer")) as f:
+        weight_map = json.load(f)["weight_map"]
+    by_shard = {}
+    for name in params:
+        if name not in keep_fp8:
+            by_shard.setdefault(weight_map[name], []).append(name)
+    for shard, names in by_shard.items():
+        with safe_open(hf_hub_download(repo, shard, subfolder="transformer"), framework="pt") as f:
+            for name in names:
+                params[name].data = f.get_tensor(name).to(device="cuda", dtype=torch.bfloat16)
+    # Empty skip list: the default one exempts anything under a "norm" path, and
+    # the adaLN projections live there. Every linear is fp8 here, so every
+    # linear needs the hook.
+    model.enable_layerwise_casting(storage_dtype=fp8, compute_dtype=torch.bfloat16, skip_modules_pattern=())
+    return model
 
 
 def load_hunyuan15(repo, dtype, skip):
@@ -143,9 +187,50 @@ def encode_wan(pipe, prompt, negative, cfg):
 
 
 def encode_ltx2(pipe, prompt, negative, cfg):
-    pe, pm, ne, nm = pipe.encode_prompt(prompt, negative_prompt=negative, do_classifier_free_guidance=cfg)
+    # Gemma-12B (22 GB) and the text connectors (12 GB) do not fit the card
+    # together, and they run one after the other: swap them.
+    import gc
+    pipe.text_encoder.to("cuda")
+    pe, pm, ne, nm = pipe.encode_prompt(prompt, negative_prompt=negative, do_classifier_free_guidance=cfg,
+                                        device="cuda")
+    pipe.text_encoder = None
+    gc.collect()
+    torch.cuda.empty_cache()
+    # The connectors run inside __call__ on the encoder output, not in
+    # encode_prompt. Run them here, on the same [negative, positive] batch
+    # __call__ would build, and hand the generator stage the result.
+    pipe.connectors.to("cuda")
+    embeds, masks = (torch.cat([ne, pe]), torch.cat([nm, pm])) if cfg else (pe, pm)
+    connected = pipe.connectors(embeds, masks, padding_side=getattr(pipe.tokenizer, "padding_side", "left"))
     return dict(prompt_embeds=pe, prompt_attention_mask=pm,
-                negative_prompt_embeds=ne, negative_prompt_attention_mask=nm)
+                negative_prompt_embeds=ne, negative_prompt_attention_mask=nm,
+                _connectors=connected)
+
+
+class CachedConnectors:
+    """Stands in for LTX2TextConnectors in the generator stage: same call, precomputed answer."""
+
+    def __init__(self, out):
+        self.out = out
+
+    def __call__(self, *args, **kwargs):
+        return self.out
+
+
+def prepare_ltx2(pipe, embeds):
+    pipe.connectors = CachedConnectors(embeds.pop("_connectors"))
+
+
+def export_ltx2(pipe, out, path, fps):
+    """LTX-2.5 generates audio jointly; mux it into the mp4."""
+    from diffusers.utils import encode_video
+    encode_video(out.frames[0], fps=fps, output_path=path, audio=out.audio[0].float().cpu(),
+                 audio_sample_rate=pipe.vocoder.config.output_sampling_rate)
+
+
+def export_frames(pipe, out, path, fps):
+    from diffusers.utils import export_to_video
+    export_to_video(out.frames[0], path, fps=fps)
 
 
 def encode_hunyuan15(pipe, prompt, negative, cfg):
@@ -166,12 +251,27 @@ MODELS = {
         frames=[25, 49, 81, 121, 161, 241], negative=WAN_NEGATIVE,
         kwargs=dict(),
     ),
+    "wan2.2-5b-turbo": dict(
+        # Step- and CFG-distilled (Self-Forcing / DMD) TI2V-5B: 4 steps, no
+        # guidance, UniPC with flow_shift 5 from the repo's scheduler config.
+        repo="yetter-ai/Wan2.2-TI2V-5B-Turbo-Diffusers", load=load_wan, encode=encode_wan,
+        encoders=("text_encoder", "tokenizer"),
+        width=1280, height=704, fps=24, steps=4, guidance=1.0, frame_step=4,
+        frames=[25, 49, 81, 121, 161, 241], negative=None,
+        kwargs=dict(),
+    ),
     "ltx-2.5": dict(
         repo="Lightricks/LTX-2.5-Diffusers", load=load_ltx2, encode=encode_ltx2,
         encoders=("text_encoder", "tokenizer", "connectors"),
+        prepare=prepare_ltx2, export=export_ltx2, staged_encode=True, dtype="fp8 weights, bf16 compute",
         width=960, height=544, fps=24, steps=8, guidance=1.0, frame_step=8,
-        frames=[25, 49, 97, 121, 169, 241], negative=None,
-        kwargs=dict(frame_rate=24.0),
+        frames=[25, 49, 97, 121, 169, 241, 361, 481], negative=None,
+        # The distilled recipe from the model card: its fixed 8-sigma schedule
+        # (diffusers.pipelines.ltx2.utils.DISTILLED_SIGMA_VALUES) and no
+        # guidance of any kind. The sigmas go if --steps overrides 8.
+        kwargs=dict(frame_rate=24.0, sigmas=[1.0, 0.99375, 0.9875, 0.98125, 0.975, 0.909375, 0.725, 0.421875],
+                    audio_guidance_scale=1.0, stg_scale=0.0, audio_stg_scale=0.0,
+                    modality_scale=1.0, audio_modality_scale=1.0, output_type="np"),
     ),
     "hunyuan-1.5": dict(
         repo="hunyuanvideo-community/HunyuanVideo-1.5-Diffusers-720p_t2v",
@@ -217,15 +317,16 @@ def gb(n):
     return round(n / 2**30, 2)
 
 
-def encode_once(spec, prompt, cfg):
+def encode_once(spec, prompt, cfg, negative=None):
     """Load only the text-encoder side, encode the prompt, free it all again."""
     import gc
     names = component_names(spec["repo"])
     keep = spec["encoders"] + spec.get("encoder_extra", ())
     pipe = spec["load"](spec["repo"], torch.bfloat16, {n: None for n in names if n not in keep})
-    pipe.to("cuda")
+    if not spec.get("staged_encode"):  # otherwise the encoder moves its pieces itself
+        pipe.to("cuda")
     with torch.inference_mode():
-        embeds = spec["encode"](pipe, prompt, spec["negative"], cfg)
+        embeds = spec["encode"](pipe, prompt, spec["negative"] if negative is None else negative, cfg)
     del pipe
     gc.collect()
     torch.cuda.empty_cache()
@@ -238,17 +339,22 @@ def one_clip(pipe, spec, frames, args, embeds, out_path):
     torch.cuda.reset_peak_memory_stats()
     # Per-step timestamps by wrapping the scheduler: every pipeline calls
     # scheduler.step() once per denoise step, not every one offers a callback.
+    # Patched on the class, not the instance: LTX-2 deep-copies the scheduler
+    # for its audio track, and a copied instance attribute would step the
+    # original scheduler twice per iteration.
     step_times = []
-    orig_step = pipe.scheduler.step
+    sched_cls = type(pipe.scheduler)
+    orig_step = sched_cls.step
 
-    def timed_step(*a, **kw):
-        r = orig_step(*a, **kw)
-        step_times.append(time.perf_counter())
+    def timed_step(self, *a, **kw):
+        r = orig_step(self, *a, **kw)
+        if self is pipe.scheduler:
+            step_times.append(time.perf_counter())
         return r
-    pipe.scheduler.step = timed_step
+    sched_cls.step = timed_step
 
     gen = torch.Generator(device="cuda").manual_seed(args.seed)
-    level = dict(frames=frames, seconds=round(frames / spec["fps"], 2),
+    level = dict(frames=frames, seconds=round(frames / args.fps, 2),
                  width=args.width, height=args.height, steps=args.steps)
     t0 = time.perf_counter()
     try:
@@ -257,9 +363,7 @@ def one_clip(pipe, spec, frames, args, embeds, out_path):
                    num_inference_steps=args.steps, generator=gen,
                    **guidance, **embeds, **spec["kwargs"])
         t_end = time.perf_counter()
-        video = out.frames[0]
-        from diffusers.utils import export_to_video
-        export_to_video(video, out_path, fps=spec["fps"])
+        spec.get("export", export_frames)(pipe, out, out_path, args.fps)
         t_saved = time.perf_counter()
     except torch.OutOfMemoryError as e:
         level.update(status="oom", error=str(e).splitlines()[0][:200],
@@ -270,7 +374,7 @@ def one_clip(pipe, spec, frames, args, embeds, out_path):
         level.update(status="error", error=f"{type(e).__name__}: {str(e)[:200]}")
         return level
     finally:
-        pipe.scheduler.step = orig_step
+        sched_cls.step = orig_step
 
     # Steps 2..N are timed from callbacks; scale to N so the first step (which
     # shares its start with latent prep) does not skew the per-step figure.
@@ -302,6 +406,9 @@ def main():
     ap.add_argument("--frames", default=None, help="comma list; default per model")
     ap.add_argument("--size", default=None, help="WxH; default per model")
     ap.add_argument("--steps", type=int, default=None)
+    ap.add_argument("--fps", type=int, default=None,
+                    help="frames per second of content. LTX-2.5 is conditioned on it and generates fewer "
+                         "frames per second; Wan and Hunyuan are not, so for them it is just slower playback")
     ap.add_argument("--guidance", type=float, default=None)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--offload", action="store_true",
@@ -320,6 +427,9 @@ def main():
     spec = MODELS[args.model]
     args.label = args.label or args.model
     args.steps = args.steps or spec["steps"]
+    args.fps = args.fps or spec["fps"]
+    if "frame_rate" in spec["kwargs"]:
+        spec["kwargs"]["frame_rate"] = float(args.fps)
     args.guidance = spec["guidance"] if args.guidance is None else args.guidance
     if args.size:
         w, _, h = args.size.partition("x")
@@ -334,7 +444,7 @@ def main():
     import diffusers
     print(f"model    {args.model}  ({spec['repo']})")
     print(f"gpu      {torch.cuda.get_device_name(0)}  torch {torch.__version__}  diffusers {diffusers.__version__}")
-    print(f"shape    {args.width}x{args.height} @ {spec['fps']} fps, {args.steps} steps, guidance {args.guidance}"
+    print(f"shape    {args.width}x{args.height} @ {args.fps} fps, {args.steps} steps, guidance {args.guidance}"
           f"{', cpu offload' if args.offload else ''}")
     sys.stdout.flush()
 
@@ -352,6 +462,10 @@ def main():
         pipe.to("cuda")
     if spec.get("guider"):
         pipe.guider = pipe.guider.__class__.from_config(pipe.guider.config, guidance_scale=args.guidance)
+    if spec.get("prepare"):
+        spec["prepare"](pipe, embeds)
+    if args.steps != spec["steps"]:
+        spec["kwargs"].pop("sigmas", None)
     vae_tiling = not args.no_vae_tiling and hasattr(pipe.vae, "enable_tiling")
     if vae_tiling:
         pipe.vae.enable_tiling()
@@ -395,9 +509,9 @@ def main():
         label=args.label, model=args.model, repo=spec["repo"],
         generated=dt.date.today().isoformat(),
         gpu=torch.cuda.get_device_name(0), torch=torch.__version__, diffusers=diffusers.__version__,
-        dtype="bf16", offload=args.offload, vae_tiling=vae_tiling, text_encoder_dropped=True,
+        dtype=spec.get("dtype", "bf16"), offload=args.offload, vae_tiling=vae_tiling, text_encoder_dropped=True,
         load_s=round(load_s, 1), encode_s=round(encode_s, 1),
-        workload=dict(width=args.width, height=args.height, fps=spec["fps"], steps=args.steps,
+        workload=dict(width=args.width, height=args.height, fps=args.fps, steps=args.steps,
                       guidance=args.guidance, seed=args.seed, prompt=PROMPT),
         levels=levels,
         dimensions=dict(model=args.model, res=f"{args.width}x{args.height}", steps=str(args.steps),

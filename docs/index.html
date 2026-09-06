@@ -821,25 +821,46 @@
     if (!vals.length) return;
     const rawMax = Math.max(...vals);
     const mag = Math.pow(10, Math.floor(Math.log10(rawMax)));
-    const yMax = Math.ceil(rawMax / (mag / 2)) * (mag / 2);
-    const X = (c) => L + (xs.length === 1 ? pw / 2 : (xs.indexOf(c) / (xs.length - 1)) * pw);
-    const Y = (v) => T + (1 - v / yMax) * ph;
+    // Log y when the series span decades (4 s next to 1000 s would flatten
+    // the fast ones to the axis); numeric x when the levels are not shared
+    // steps (clip lengths at two frame rates).
+    const log = !!(opts && opts.log);
+    const yMin = log ? Math.pow(10, Math.floor(Math.log10(Math.min(...vals)))) : 0;
+    const yMax = log ? Math.pow(10, Math.ceil(Math.log10(rawMax))) : Math.ceil(rawMax / (mag / 2)) * (mag / 2);
+    const numeric = !!(opts && opts.xNumeric) && xs.length > 1;
+    const xMin = xs[0], xMax = xs[xs.length - 1];
+    const X = (c) => L + (xs.length === 1 ? pw / 2
+      : numeric ? ((c - xMin) / (xMax - xMin)) * pw : (xs.indexOf(c) / (xs.length - 1)) * pw);
+    const Y = log
+      ? (v) => T + (1 - (Math.log10(v) - Math.log10(yMin)) / (Math.log10(yMax) - Math.log10(yMin))) * ph
+      : (v) => T + (1 - v / yMax) * ph;
 
     // gridlines + y ticks. Decimals come from the step size, not the value, so
-    // a 0.5 step never renders 1.5 as "2".
-    const step = yMax / 4;
+    // a 0.5 step never renders 1.5 as "2". Log axes tick at 1-2-5 per decade.
+    const ticks = [];
+    if (log) {
+      const decades = Math.round(Math.log10(yMax) - Math.log10(yMin));
+      for (let d = yMin; d < yMax; d *= 10) ticks.push(...(decades <= 3 ? [d, 2 * d, 5 * d] : [d]));
+      ticks.push(yMax);
+    } else {
+      for (let i = 0; i <= 4; i++) ticks.push((yMax / 4) * i);
+    }
+    const step = log ? yMin : yMax / 4;
     const dec = step >= 1 ? 0 : step >= 0.1 ? 1 : 2;
-    for (let i = 0; i <= 4; i++) {
-      const v = step * i, y = Y(v);
+    ticks.forEach((v, i) => {
+      const y = Y(v);
       svg.appendChild(svgEl('line', { class: i === 0 ? 'axisline' : 'grid', x1: L, x2: L + pw, y1: y, y2: y }));
       const t = svgEl('text', { class: 'tick', x: L - 10, y: y + 4, 'text-anchor': 'end' });
       t.textContent = dec ? v.toFixed(dec) : Math.round(v).toLocaleString('en-US');
       svg.appendChild(t);
-    }
-    // x ticks
+    });
+    // x ticks; on a numeric axis, labels that would overlap are dropped
+    let lastTick = -Infinity;
     for (const c of xs) {
+      if (numeric && X(c) - lastTick < 30) continue;
+      lastTick = X(c);
       const t = svgEl('text', { class: 'tick', x: X(c), y: T + ph + 20, 'text-anchor': 'middle' });
-      t.textContent = c;
+      t.textContent = numeric ? Math.round(c) : c;
       svg.appendChild(t);
     }
 
@@ -1368,9 +1389,9 @@
       return sec + ' s of video' + (lv ? ' · ' + lv.frames + ' frames' : '');
     };
     drawLine($('chartVideoWall'), series, l => l.status === 'ok' ? l.wall_s : null,
-      v => v >= 100 ? Math.round(v) + ' s' : v.toFixed(1) + ' s', { xKey: 'seconds', xTitle });
+      v => v >= 100 ? Math.round(v) + ' s' : v.toFixed(1) + ' s', { xKey: 'seconds', xTitle, log: true, xNumeric: true });
     drawLine($('chartVideoVram'), series, l => l.peak_vram_gb != null ? l.peak_vram_gb : null,
-      v => v.toFixed(1) + ' GB', { xKey: 'seconds', xTitle });
+      v => v.toFixed(1) + ' GB', { xKey: 'seconds', xTitle, xNumeric: true });
 
     const tb = $('videoBody');
     tb.innerHTML = '';

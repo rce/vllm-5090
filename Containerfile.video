@@ -13,7 +13,7 @@ FROM docker.io/vllm/vllm-openai:v0.28.0
 
 RUN pip install --no-cache-dir \
       "diffusers @ https://github.com/huggingface/diffusers/archive/c5469b7ceb60.tar.gz" \
-      imageio imageio-ffmpeg ftfy sentencepiece protobuf
+      imageio imageio-ffmpeg ftfy sentencepiece protobuf av
 
 ENV HF_HOME=/root/.cache/huggingface
 
