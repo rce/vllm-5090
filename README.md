@@ -1,12 +1,12 @@
 # vllm-5090
 
-Running open models locally on a single RTX 5090, and measuring what that
-actually gets you.
+Tooling I use for running open models on a single RTX 5090 and various
+benchmarks that might or might not be useful in deciding which to use and when.
 
-> **TODO (human):** what this is for, and where it's going.
+Two models I am interested in at the moment:
 
-Two models are set up and benchmarked so far — Qwen3.6-35B-A3B and
-Qwen3.8-27B — both NVFP4, both served by vLLM in a pinned container.
+- Qwen3.6-35B-A3B
+- Qwen3.8-27B
 
 ## Getting a model running
 
@@ -34,8 +34,5 @@ records whether the configuration works at each level at all.
 | | |
 | --- | --- |
 | `profiles/` | One env file per model configuration |
-| `docs/` | Browsable benchmark results — `docs/results.json` is the source of truth |
-| `agent-notes/` | The deep dive: findings, flag rationales, dead ends, what was measured and how |
-
-If you want to know *why* a particular flag is set, or which configurations
-failed and how, `agent-notes/operating-the-stack.md` is the place to start.
+| `docs/` | [Browsable benchmark results](https://rce.github.io/vllm-5090/) — `docs/results.json` is the source of truth |
+| `agent-notes/` | The deep dive as written by the infinitely persistent LLMs I use to setup the configuration and benchmarks, flag rationales, dead ends, what was measured and how |
