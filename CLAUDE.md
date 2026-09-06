@@ -6,6 +6,7 @@ profiles/                One env file per model configuration, fed to the contai
 bench.py                 Synthetic concurrency sweep against a running server
 quality.py               Divergence probe: does a flag change what the model says? (docs/divergence.md)
 quality/prompts.jsonl    The fixed prompt set the probe scores; captures land in quality/captures/ (untracked)
+agentic.py               Tool-call smoke checks and a replayed agent-loop benchmark (warm vs cold prefix cache)
 docs/                    Publicly viewable interactive page for browsing benchmark results
 docs/results.json        The actual benchmark results
 README.md                Human written document presenting the project and repository
@@ -44,3 +45,8 @@ for `agent-notes/`, not a benchmark result.
 it: the MoE servers are not deterministic run to run, and a comparison at the
 noise floor means nothing. Comparison summaries merge into `docs/results.json`
 the same way sweeps do; the raw captures do not go in git.
+
+`agentic.py` covers the agent-shaped questions: `tools` checks that structured
+tool calls survive the server's parsers, `loop` replays a growing coding-agent
+transcript and reports per-turn TTFT with and without prefix caching. Both merge
+into `docs/results.json` (`toolcalls`, `loops`).

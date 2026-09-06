@@ -410,6 +410,62 @@
       </div>
     </div>
 
+    <div class="card" id="toolSection" hidden>
+      <h2>Does tool calling work through the server?</h2>
+      <p class="sub">Six short requests through the OpenAI-compatible endpoint with two tools
+        declared: does the server return structured <code>tool_calls</code>, use a tool result,
+        make two calls in one turn, stay quiet when no tool is needed, stream a call, and copy a
+        path argument exactly. A fail is usually the parser, not the model. Produced by
+        <code>agentic.py tools</code>.</p>
+      <div class="scroll">
+        <table>
+          <thead id="toolHead"></thead>
+          <tbody id="toolBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="loopSection" hidden>
+      <h2>Agentic loop</h2>
+      <p class="sub">A replayed coding-agent transcript: a 600-word system prompt, then sixteen
+        turns of "read this file" tool calls, each one adding ~1.2K tokens of code to the
+        context. After every turn the server is asked for the next step. <em>Warm</em> lets the
+        server reuse what it already computed for the previous turn; <em>cold</em> defeats that
+        so every turn is prefilled from scratch. The gap between them is what prefix caching is
+        worth. Produced by <code>agentic.py loop</code>.</p>
+      <p class="note-inline">Colours identify <em>configurations</em>. Solid lines are warm,
+        dashed are cold.</p>
+      <div class="dimbar" id="loopbar" role="group" aria-label="Number of simultaneous agents"></div>
+      <ul class="legend" id="legendLoop"></ul>
+
+      <h3 style="font-size:13px;margin:22px 0 2px">Time to first token per turn</h3>
+      <p class="sub">What the agent waits before the next step starts arriving, as the
+        context grows turn by turn. Lower and flatter is better.</p>
+      <svg class="linechart" id="chartLoop" viewBox="0 0 880 300" role="img"></svg>
+      <div class="axname">turn</div>
+
+      <h3 style="font-size:13px;margin:26px 0 10px">Every run</h3>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Configuration</th>
+              <th scope="col">Agents</th>
+              <th scope="col">Mode</th>
+              <th scope="col">Turns</th>
+              <th scope="col">TTFT turn 1</th>
+              <th scope="col">TTFT turn 16</th>
+              <th scope="col">TTFT p95</th>
+              <th scope="col">Context at end</th>
+              <th scope="col">Cache hit</th>
+              <th scope="col">Turns / min</th>
+            </tr>
+          </thead>
+          <tbody id="loopBody"></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="card">
       <h2>What did not work</h2>
       <p class="sub">Recorded because these are the configurations you would reach for first.</p>
@@ -703,7 +759,9 @@
     moveTip(ev);
   }
 
-  function drawLine(svg, series, pick, fmtVal) {
+  function drawLine(svg, series, pick, fmtVal, opts) {
+    const xKey = (opts && opts.xKey) || 'concurrency';
+    const xTitle = (opts && opts.xTitle) || ((c) => c + (c === 1 ? ' concurrent request' : ' concurrent requests'));
     svg.innerHTML = '';
     // Render at the container's real pixel width rather than scaling a fixed
     // viewBox, so tick and label text stays at its true size on a phone.
@@ -714,7 +772,7 @@
     const L = narrow ? 42 : 56, R = narrow ? 14 : 104, T = 14, B = 36;
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
     const pw = W - L - R, ph = H - T - B;
-    const xs = [...new Set(series.flatMap(s => s.levels.map(l => l.concurrency)))].sort((a, b) => a - b);
+    const xs = [...new Set(series.flatMap(s => s.levels.map(l => l[xKey])))].sort((a, b) => a - b);
     if (!xs.length) return;
     const vals = series.flatMap(s => s.levels.map(pick)).filter(v => v != null);
     if (!vals.length) return;
@@ -749,13 +807,15 @@
     for (const s of series) {
       const pts = s.levels.filter(l => pick(l) != null);
       if (!pts.length) continue;
-      svg.appendChild(svgEl('polyline', {
+      const attrs = {
         class: 'ser', stroke: s.color,
-        points: pts.map(l => `${X(l.concurrency)},${Y(pick(l))}`).join(' '),
-      }));
+        points: pts.map(l => `${X(l[xKey])},${Y(pick(l))}`).join(' '),
+      };
+      if (s.dash) attrs['stroke-dasharray'] = '6 5';
+      svg.appendChild(svgEl('polyline', attrs));
       for (const l of pts) {
         svg.appendChild(svgEl('circle', {
-          class: 'ring', cx: X(l.concurrency), cy: Y(pick(l)), r: 4.5, fill: s.color,
+          class: 'ring', cx: X(l[xKey]), cy: Y(pick(l)), r: s.dash ? 3 : 4.5, fill: s.color,
         }));
       }
     }
@@ -768,7 +828,7 @@
     const collide = ends.some((e, i) => i > 0 && Math.abs(Y(pick(e.p)) - Y(pick(ends[i - 1].p))) < 14);
     if (!collide && !narrow) {
       for (const e of ends) {
-        const x = X(e.p.concurrency), y = Y(pick(e.p));
+        const x = X(e.p[xKey]), y = Y(pick(e.p));
         svg.appendChild(svgEl('circle', { cx: x + 12, cy: y - 3, r: 3.5, fill: e.s.color }));
         const t = svgEl('text', { class: 'endlab', x: x + 20, y: y });
         t.textContent = fmtVal(pick(e.p));
@@ -788,10 +848,10 @@
       cross.setAttribute('opacity', 1);
       const rows = [];
       for (const s of series) {
-        const l = s.levels.find(l => l.concurrency === c);
+        const l = s.levels.find(l => l[xKey] === c);
         if (l && pick(l) != null) rows.push({ color: s.color, label: s.label, value: fmtVal(pick(l)) });
       }
-      showRowsTip(ev, c + (c === 1 ? ' concurrent request' : ' concurrent requests'), rows);
+      showRowsTip(ev, xTitle(c), rows);
     };
     hit.addEventListener('pointermove', (ev) => {
       const box = svg.getBoundingClientRect();
@@ -1069,6 +1129,172 @@
     }
   }
 
+  // --- tool calling -------------------------------------------------------
+  // One row per configuration, one column per check. The glyph carries the
+  // result; the tooltip carries what the model actually returned.
+  const toolcalls = data.toolcalls || [];
+  const CHECK_LABEL = {
+    single_call: 'One call', tool_result_roundtrip: 'Uses result', parallel_calls: 'Two calls',
+    no_false_call: 'No false call', streaming_call: 'Streaming', path_argument: 'Exact path',
+  };
+
+  function renderToolcalls(filter) {
+    const section = $('toolSection');
+    const list = toolcalls.filter(t => filter === 'all' || t.model === filter);
+    section.hidden = !list.length;
+    if (!list.length) return;
+    const names = [...new Set(list.flatMap(t => t.checks.map(c => c.name)))];
+
+    const th = $('toolHead');
+    th.innerHTML = '';
+    const hr = document.createElement('tr');
+    for (const h of ['Configuration', 'Passed', ...names.map(n => CHECK_LABEL[n] || n), 'Reasoning field']) {
+      const el = document.createElement('th');
+      el.scope = 'col';
+      el.textContent = h;
+      hr.appendChild(el);
+    }
+    th.appendChild(hr);
+
+    const tb = $('toolBody');
+    tb.innerHTML = '';
+    for (const t of list) {
+      const tr = document.createElement('tr');
+      const first = document.createElement('td');
+      first.textContent = t.label;
+      if (t.notes) {
+        const sm = document.createElement('span');
+        sm.className = 'sm';
+        sm.textContent = t.notes;
+        first.appendChild(sm);
+      }
+      tr.appendChild(first);
+      const passed = document.createElement('td');
+      passed.textContent = t.passed + '/' + t.total;
+      tr.appendChild(passed);
+      for (const n of names) {
+        const c = t.checks.find(c => c.name === n);
+        const td = document.createElement('td');
+        if (!c) {
+          td.textContent = '—';
+        } else {
+          td.textContent = c.pass ? '✓' : '✗';
+          td.title = c.detail + (c.latency_s != null ? ' · ' + c.latency_s.toFixed(2) + ' s' : '');
+          const sm = document.createElement('span');
+          sm.className = 'sm';
+          sm.textContent = c.latency_s != null ? c.latency_s.toFixed(2) + ' s' : '';
+          td.appendChild(sm);
+        }
+        tr.appendChild(td);
+      }
+      const rf = document.createElement('td');
+      rf.textContent = t.reasoning_field_seen == null ? '—' : t.reasoning_field_seen ? 'yes' : 'no';
+      tr.appendChild(rf);
+      tb.appendChild(tr);
+    }
+  }
+
+  // --- agentic loop -------------------------------------------------------
+  // Colour follows the configuration, line style follows the mode, and the
+  // agent-count chips pick which level is charted. The table shows all of them.
+  const loops = (data.loops || []).map((l, i) => ({ ...l, color: SWEEP_COLORS[i % SWEEP_COLORS.length] }));
+  const loopAgentLevels = [...new Set(loops.flatMap(l => l.levels.map(v => v.agents)))].sort((a, b) => a - b);
+  let loopAgents = loopAgentLevels[0];
+
+  function buildLoopBar() {
+    const bar = $('loopbar');
+    bar.innerHTML = '';
+    if (loopAgentLevels.length < 2) return;
+    const g = document.createElement('div');
+    g.className = 'dimgroup';
+    const lab = document.createElement('span');
+    lab.className = 'glab';
+    lab.textContent = 'Agents';
+    g.appendChild(lab);
+    for (const a of loopAgentLevels) {
+      const b = document.createElement('button');
+      b.className = 'chip';
+      b.type = 'button';
+      b.textContent = String(a);
+      b.setAttribute('aria-pressed', String(a === loopAgents));
+      b.addEventListener('click', () => {
+        loopAgents = a;
+        for (const o of bar.querySelectorAll('.chip')) o.setAttribute('aria-pressed', String(o === b));
+        hideTip();
+        renderLoops(currentModelFilter);
+      });
+      g.appendChild(b);
+    }
+    bar.appendChild(g);
+  }
+
+  function renderLoops(filter) {
+    const section = $('loopSection');
+    const list = loops.filter(l => filter === 'all' || l.model === filter);
+    section.hidden = !list.length;
+    if (!list.length) return;
+
+    const lg = $('legendLoop');
+    lg.innerHTML = '';
+    for (const l of list) {
+      const li = document.createElement('li');
+      const sw = document.createElement('span');
+      sw.className = 'swatch';
+      sw.style.background = l.color;
+      const tx = document.createElement('span');
+      tx.textContent = l.label;
+      li.append(sw, tx);
+      lg.appendChild(li);
+    }
+
+    const series = [];
+    for (const l of list) {
+      for (const mode of ['warm', 'cold']) {
+        const lv = l.levels.find(v => v.agents === loopAgents && v.mode === mode && v.per_turn && v.per_turn.length);
+        if (!lv) continue;
+        series.push({ label: l.label + ' · ' + mode, color: l.color, dash: mode === 'cold', levels: lv.per_turn });
+      }
+    }
+    drawLine($('chartLoop'), series, r => r.ttft_p50_s, v => v.toFixed(2) + ' s', {
+      xKey: 'turn',
+      xTitle: (t) => {
+        const ctx = series.map(s => s.levels.find(r => r.turn === t)).find(Boolean);
+        return 'turn ' + t + (ctx ? ' · ' + fmt(ctx.context_tokens) + ' tokens of context' : '');
+      },
+    });
+
+    const tb = $('loopBody');
+    tb.innerHTML = '';
+    for (const l of list) {
+      for (const v of l.levels) {
+        const tr = document.createElement('tr');
+        const first = document.createElement('td');
+        const dot = document.createElement('span');
+        dot.className = 'dot';
+        dot.style.background = l.color;
+        first.append(dot, document.createTextNode(l.label));
+        tr.appendChild(first);
+        const cells = [
+          v.agents,
+          v.mode,
+          v.turns_ok + '/' + v.turns_requested,
+          v.ttft_first_turn_s != null ? v.ttft_first_turn_s.toFixed(3) + ' s' : '—',
+          v.ttft_last_turn_s != null ? v.ttft_last_turn_s.toFixed(3) + ' s' : '—',
+          v.ttft_p95_s != null ? v.ttft_p95_s.toFixed(3) + ' s' : '—',
+          v.context_tokens_last != null ? fmt(v.context_tokens_last) : '—',
+          v.prefix_cache_hit_rate != null ? (v.prefix_cache_hit_rate * 100).toFixed(1) + '%' : '—',
+          v.turns_per_minute != null ? v.turns_per_minute.toFixed(1) : '—',
+        ];
+        for (const c of cells) {
+          const td = document.createElement('td');
+          td.textContent = c;
+          tr.appendChild(td);
+        }
+        tb.appendChild(tr);
+      }
+    }
+  }
+
   // --- render + filter ----------------------------------------------------
   function render(filter) {
     const list = filter === 'all' ? runs : runs.filter(r => r.model === filter);
@@ -1084,6 +1310,8 @@
     drawTable(list);
     renderSweeps(filter);
     renderDivergence(filter);
+    renderToolcalls(filter);
+    renderLoops(filter);
   }
 
   // Model chips come from every section's data, so a model that only has a
@@ -1093,6 +1321,8 @@
     ...sweeps.map(s => s.model),
     ...(data.divergence || []).map(d => d.model),
     ...(data.jitter || []).map(j => j.model),
+    ...(data.toolcalls || []).map(t => t.model),
+    ...(data.loops || []).map(l => l.model),
   ].filter(Boolean))];
   for (const m of allModels) {
     const b = document.createElement('button');
@@ -1116,6 +1346,7 @@
     });
   }
   buildDimBar();
+  buildLoopBar();
   render('all');
 
   // The line charts are sized in real pixels, so they need redrawing when the
@@ -1123,7 +1354,7 @@
   let resizeTimer;
   addEventListener('resize', () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => { hideTip(); renderSweeps(currentModelFilter); }, 150);
+    resizeTimer = setTimeout(() => { hideTip(); renderSweeps(currentModelFilter); renderLoops(currentModelFilter); }, 150);
   });
 
   const f = $('footer');
