@@ -59,13 +59,41 @@ The cost is a consistent 3-5% at concurrency 1-8. Small, and possibly noise,
 but it leans the same way at every level so probably real: more sequence slots
 means more per-step scheduling and state.
 
-**Not changed in the profile.** The recipe's `--max-num-seqs 8` is likely tuned
-for long-context serving, and this sweep does not test that: prompts here are
-786 tokens, while vLLM reports only 5.65x max concurrency at the full 65,536
-context. Thirty-two concurrent 64K sequences would need several million KV
-tokens and would preempt. So 32 is right for short-prompt, many-caller work and
-8 may still be right for long documents — that is a workload decision, not a
-benchmark one.
+## Long-context follow-up: the worry was unfounded
+
+The reason not to just raise the cap was that long prompts might preempt and
+thrash. Tested it — 14,500-word prompts (~16.3K tokens), 256 output tokens,
+one round per level.
+
+| Concurrency | total tok/s @ 8 | total tok/s @ 32 | TTFT p95 @ 8 | TTFT p95 @ 32 |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 158 | 157 | 0.64 s | 0.63 s |
+| 2 | 203 | 195 | 1.24 s | 1.31 s |
+| 4 | 260 | 254 | 2.51 s | 2.55 s |
+| 8 | 298 | 304 | 4.96 s | 4.92 s |
+| 16 | 309 | 306 | 11.32 s | 11.73 s |
+| 32 | 304 | **339** | 24.56 s | **22.09 s** |
+
+They are the same curve. Every request succeeded in both configurations — no
+preemption thrash, no failures, no OOM. At the top level the higher cap is
+slightly *better* on both axes (+11% throughput, 10% lower tail).
+
+The reason is that this workload is **prefill-bound, not slot-bound**. Each
+request drags 16.3K tokens through prefill and then emits only 256, so the
+server spends nearly all its time on prompts and the number of decode slots
+barely matters. Both configurations converge on the same ~300 tok/s ceiling —
+about a tenth of the 2,546 tok/s the short-prompt workload reaches, which is
+the honest cost of long context here.
+
+Note also that at concurrency 32 the sequence cap was never the binding
+constraint for the seqs=32 run: 32 × 16.3K = 524K KV tokens against a 370K
+pool, so vLLM was scheduling in waves on KV capacity either way.
+
+**So the profile default moves to 32.** The recipe's 8 has no measured
+advantage on this card in either regime, and costs 54% of throughput in the
+short-prompt one. This diverges from the recipe deliberately and the reason is
+recorded here; revert the one line in `profiles/qwen3.6-35b-a3b.env` if a
+workload ever shows otherwise.
 
 ## Worth trying next
 
