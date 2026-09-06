@@ -11,3 +11,4 @@ quality/captures/
 
 # Generated clips are large and not results; the numbers go in docs/results.json.
 video/out/
+video/gen/

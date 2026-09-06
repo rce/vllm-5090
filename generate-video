@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Generate one clip from a prompt, in the video-5090 container.
+#
+#   ./generate-video ltx-2.5 "a red bicycle against a white wall, a cat walks past"
+#   ./generate-video ltx-2.5 "..." --seconds 8 --seed 3 --out cat.mp4
+#   ./generate-video wan2.2-5b-turbo "..." --size 640x352
+#   ./generate-video --help
+#
+# Clips land in video/gen/ unless --out says otherwise. Same container and
+# mounts as video.sh; see generate.py for the options.
+set -euo pipefail
+HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+tty=(); [[ -t 0 ]] && tty=(-t)
+exec podman run --rm -i "${tty[@]}" \
+  --name "${NAME:-generate-video}" \
+  --device nvidia.com/gpu=all \
+  --security-opt=label=disable \
+  --ipc=host \
+  -v "${HF_HOME:-$HOME/.cache/huggingface}:/root/.cache/huggingface" \
+  -v "$HERE:/work" \
+  -v /etc/localtime:/etc/localtime:ro \
+  ${HF_TOKEN:+-e HF_TOKEN="$HF_TOKEN"} \
+  --entrypoint python3 \
+  "${IMAGE:-localhost/video-5090:latest}" \
+  /work/generate.py "$@"

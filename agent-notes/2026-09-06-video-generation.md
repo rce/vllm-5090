@@ -297,3 +297,16 @@ speed); `--dim` tags the entry for the page's filters. Clips land in
 `video/out/<label>/`. The Hunyuan entry in `results.json` was transcribed
 from the run's table after the sweep was stopped by hand, so it lacks the
 reserved-memory and export columns.
+
+For actually making a clip rather than measuring one, `generate-video` runs
+`generate.py` in the same container with the same model setups:
+
+```
+./generate-video ltx-2.5 "a red bicycle against a whitewashed wall, a cat walks past"
+./generate-video ltx-2.5 "..." --seconds 8 --fps 12 --size 640x352 --seed 3 --out preview.mp4
+./generate-video wan2.2-5b-turbo "..." --size 640x352
+```
+
+It prints the same denoise / decode / peak-VRAM line as the sweep and writes
+to `video/gen/` (untracked) by default. Expect ~25 s of loading before the
+clip on LTX (12 s of it is Gemma-12B encoding the prompt).
