@@ -218,12 +218,23 @@ last bit every time.
 | NVFP4 (profile default, bf16 KV) | 0.103 | 0.095–0.113 | 1.05 | 89.9% | −0.294 / +0.134 | 1.4257 | 0/96 | 8 |
 | NVFP4, fp8 KV (profile default) | 0.101 | 0.092–0.111 | 1.01 | 89.7% | −0.295 / +0.131 | 1.4246 | 0/96 | 9 |
 | NVFP4, text-only, CUDA graphs, seqs 32 | 0.102 | 0.093–0.112 | 1.03 | 89.8% | −0.292 / +0.132 | 1.4238 | 0/96 | 9 |
-| NVFP4, text-only, MTP | *pending — first attempt OOMed in `prompt_logprobs`; retry at batched-tokens 256, concurrency 1 running* | | | | | | | |
+| NVFP4, text-only, MTP (batched 256, concurrency 1) | 0.103 | 0.094–0.113 | 1.03 | 89.7% | −0.293 / +0.137 | 1.4261 | 0/96 | 9 |
 
 Per category, NVFP4 vs FP8: math 0.060, reasoning 0.078, structured 0.088,
 summarise 0.091, code-py 0.099, instruction 0.112, code-other 0.119,
 finnish 0.120, agentic 0.131, writing 0.139, multilingual 0.143. Top-1
 agreement 85–93% everywhere. It is a general cost.
+
+The MTP row is a real measurement, unlike its Qwen3.6 counterpart: against
+plain NVFP4 it sits at 0.027 [0.025–0.031], i.e. the between-configuration
+floor below, and no prompt shows the "row *i* predicts token *i+1*" signature
+(at most 8% of rows on any prompt, against 54–63% on the damaged Qwen3.6
+prompts). But that is not evidence the dense model is immune. Qwen3.8's chat
+template is ~42 tokens longer, so the shortest prompt here is 64 tokens — and
+on Qwen3.6 every prompt of 65 tokens or more was untouched. The clean row is
+consistent with the length rule, nothing more. (The first attempt at
+batched-tokens 1024, concurrency 4 OOMed in `prompt_logprobs` at prompt 43;
+the retry needed the same 256/1 settings as the FP8 reference.)
 
 Kernel path (from the server log): `Detected ModelOpt NVFP4 checkpoint
 (quant_algo=NVFP4)`, `Using FlashInferCutlassNvFp4LinearKernel for NVFP4

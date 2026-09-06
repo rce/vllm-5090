@@ -1779,7 +1779,7 @@
   ],
   "divergence": [
     {
-      "label": "Qwen3.6 bf16 KV \u2192 same server again",
+      "label": "Qwen3.6 bf16 KV → same server again",
       "a": "q36-root",
       "b": "q36-root-rerun",
       "model": "Qwen3.6-35B-A3B",
@@ -1921,7 +1921,7 @@
       "notes": "run-to-run floor at full prompt-set scale"
     },
     {
-      "label": "Qwen3.6 bf16 KV \u2192 fp8 KV",
+      "label": "Qwen3.6 bf16 KV → fp8 KV",
       "a": "q36-root",
       "b": "q36-kvfp8",
       "model": "Qwen3.6-35B-A3B",
@@ -2062,7 +2062,7 @@
       }
     },
     {
-      "label": "Qwen3.6 bf16 KV \u2192 + MTP",
+      "label": "Qwen3.6 bf16 KV → + MTP",
       "a": "q36-root",
       "b": "q36-mtp",
       "model": "Qwen3.6-35B-A3B",
@@ -2204,7 +2204,7 @@
       "suspect": "prompt_logprobs under MTP returns the draft head's predictions (vLLM 0.28.0); generation side is at the floor"
     },
     {
-      "label": "Qwen3.6 bf16 KV \u2192 eager",
+      "label": "Qwen3.6 bf16 KV → eager",
       "a": "q36-root",
       "b": "q36-eager",
       "model": "Qwen3.6-35B-A3B",
@@ -2345,7 +2345,7 @@
       }
     },
     {
-      "label": "Qwen3.8 FP8 \u2192 same server again",
+      "label": "Qwen3.8 FP8 → same server again",
       "a": "q38-fp8",
       "b": "q38-fp8-rerun",
       "model": "Qwen3.8-27B",
@@ -2487,7 +2487,7 @@
       "notes": "run-to-run floor at full prompt-set scale"
     },
     {
-      "label": "Qwen3.8 FP8 \u2192 NVFP4",
+      "label": "Qwen3.8 FP8 → NVFP4",
       "a": "q38-fp8",
       "b": "q38-nvfp4",
       "model": "Qwen3.8-27B",
@@ -2628,7 +2628,7 @@
       }
     },
     {
-      "label": "Qwen3.8 FP8 \u2192 NVFP4 + fp8 KV",
+      "label": "Qwen3.8 FP8 → NVFP4 + fp8 KV",
       "a": "q38-fp8",
       "b": "q38-nvfp4-kvfp8",
       "model": "Qwen3.8-27B",
@@ -2770,7 +2770,7 @@
       }
     },
     {
-      "label": "Qwen3.8 NVFP4 bf16 KV \u2192 fp8 KV",
+      "label": "Qwen3.8 NVFP4 bf16 KV → fp8 KV",
       "a": "q38-nvfp4",
       "b": "q38-nvfp4-kvfp8",
       "model": "Qwen3.8-27B",
@@ -2913,7 +2913,7 @@
       "notes": "Both sides NVFP4; isolates the fp8 KV cache cost on the dense model"
     },
     {
-      "label": "Qwen3.8 FP8 \u2192 NVFP4, CUDA graphs",
+      "label": "Qwen3.8 FP8 → NVFP4, CUDA graphs",
       "a": "q38-fp8",
       "b": "q38-nvfp4-graphs",
       "model": "Qwen3.8-27B",
@@ -3055,7 +3055,7 @@
       }
     },
     {
-      "label": "Qwen3.8 NVFP4 eager \u2192 CUDA graphs",
+      "label": "Qwen3.8 NVFP4 eager → CUDA graphs",
       "a": "q38-nvfp4",
       "b": "q38-nvfp4-graphs",
       "model": "Qwen3.8-27B",
@@ -3197,6 +3197,148 @@
         "kind": "floor"
       },
       "notes": "Both sides NVFP4, bf16 KV; same weights, different kernel path (torch.compile + CUDA graphs, text-only, seqs 32). The server is deterministic so this is the between-configuration floor on the W4A4 model, not run-to-run noise."
+    },
+    {
+      "label": "Qwen3.8 FP8 → NVFP4 + MTP",
+      "a": "q38-fp8",
+      "b": "q38-nvfp4-mtp",
+      "model": "Qwen3.8-27B",
+      "generated": "2026-09-06",
+      "vllm_version": "0.28.0",
+      "prompt_set": "quality/prompts.jsonl",
+      "settings": {
+        "max_tokens": 256,
+        "top_k": 20,
+        "thinking": true,
+        "temperature": 0,
+        "seed": 0,
+        "concurrency": 1
+      },
+      "teacher_forced": {
+        "positions": 23856,
+        "kld_mean": 0.102963,
+        "kld_p50": 0.007564,
+        "kld_p90": 0.302229,
+        "kld_p99": 1.03499,
+        "kld_p999": 2.506306,
+        "kld_max": 7.7598,
+        "top1_agree": 0.89743,
+        "dp_mean_abs": 0.069852,
+        "dp_p1": -0.51443,
+        "dp_p5": -0.29314,
+        "dp_p50": -2e-05,
+        "dp_p95": 0.13673,
+        "dp_p99": 0.29202,
+        "support_mass_mean": 0.98941,
+        "ppl_a": 1.2783,
+        "ppl_b": 1.4261,
+        "prompts": 96,
+        "kld_mean_ci95": [
+          0.094096,
+          0.113293
+        ],
+        "per_category": {
+          "agentic": {
+            "positions": 1536,
+            "kld_mean": 0.131658,
+            "top1_agree": 0.88411,
+            "dp_mean_abs": 0.077751
+          },
+          "code-other": {
+            "positions": 2560,
+            "kld_mean": 0.119829,
+            "top1_agree": 0.89023,
+            "dp_mean_abs": 0.076399
+          },
+          "code-py": {
+            "positions": 3072,
+            "kld_mean": 0.09656,
+            "top1_agree": 0.89583,
+            "dp_mean_abs": 0.069218
+          },
+          "finnish": {
+            "positions": 2048,
+            "kld_mean": 0.124689,
+            "top1_agree": 0.88916,
+            "dp_mean_abs": 0.081208
+          },
+          "instruction": {
+            "positions": 2218,
+            "kld_mean": 0.114011,
+            "top1_agree": 0.90938,
+            "dp_mean_abs": 0.071224
+          },
+          "math": {
+            "positions": 3072,
+            "kld_mean": 0.059061,
+            "top1_agree": 0.92741,
+            "dp_mean_abs": 0.0519
+          },
+          "multilingual": {
+            "positions": 1024,
+            "kld_mean": 0.152818,
+            "top1_agree": 0.8584,
+            "dp_mean_abs": 0.092401
+          },
+          "reasoning": {
+            "positions": 1936,
+            "kld_mean": 0.074958,
+            "top1_agree": 0.91116,
+            "dp_mean_abs": 0.060408
+          },
+          "structured": {
+            "positions": 2379,
+            "kld_mean": 0.08679,
+            "top1_agree": 0.91593,
+            "dp_mean_abs": 0.055851
+          },
+          "summarise": {
+            "positions": 2048,
+            "kld_mean": 0.088833,
+            "top1_agree": 0.89746,
+            "dp_mean_abs": 0.065889
+          },
+          "writing": {
+            "positions": 1963,
+            "kld_mean": 0.138042,
+            "top1_agree": 0.85227,
+            "dp_mean_abs": 0.089477
+          }
+        }
+      },
+      "generation": {
+        "positions": 2068,
+        "kld_mean": 0.029949,
+        "kld_p50": 0.000123,
+        "kld_p90": 0.085411,
+        "kld_p99": 0.502315,
+        "kld_p999": 1.310637,
+        "kld_max": 1.643917,
+        "top1_agree": 1.0,
+        "dp_mean_abs": 0.023847,
+        "dp_p1": -0.2714,
+        "dp_p5": -0.10652,
+        "dp_p50": 0.0,
+        "dp_p95": 0.06503,
+        "dp_p99": 0.20001,
+        "support_mass_mean": 0.99964,
+        "ppl_a": 1.0563,
+        "ppl_b": 1.0622,
+        "prompts": 96,
+        "identical": 0,
+        "identical_rate": 0.0,
+        "diverged": 96,
+        "first_divergence_p10": 2.0,
+        "first_divergence_p50": 9.0,
+        "first_divergence_min": 0,
+        "gen_tokens_a": 23856,
+        "gen_tokens_b": 23937
+      },
+      "dimensions": {
+        "model": "Qwen3.8-27B",
+        "quant": "nvfp4",
+        "mtp": "on"
+      }
     }
   ]
 }

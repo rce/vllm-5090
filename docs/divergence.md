@@ -274,7 +274,9 @@ draft head's predictions where the main model's belong. On mid-length
 prompts the first hundred or so rows match nothing at any offset — a buffer
 partly overwritten — and prompts over ~64 tokens are untouched. The
 generation path never reads that buffer, which is why the greedy outputs
-match.
+match. (The same flag on the 27B measured cleanly — but that model's prompt
+template is longer, so none of its prompts fall in the affected band. It is
+the length rule holding, not the dense model being immune.)
 
 So: the teacher-forced view is the sensitive instrument, but it is reading a
 server feature (`prompt_logprobs`) that not every configuration implements
