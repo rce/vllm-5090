@@ -173,6 +173,13 @@
   .dot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 8px; vertical-align: baseline; }
   code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; }
 
+  /* Dimension filters */
+  .dimbar { display: flex; flex-wrap: wrap; gap: 14px 22px; margin: 0 0 18px; }
+  .dimgroup { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .dimgroup .glab { color: var(--text-muted); font-size: 11.5px; margin-right: 2px; }
+  .dimgroup .chip { padding: 3px 10px; font-size: 12px; }
+  .capnote { color: var(--text-muted); font-size: 11.5px; margin: 0 0 14px; }
+
   /* Line charts */
   .linechart { width: 100%; height: auto; display: block; overflow: visible; }
   .linechart .grid { stroke: var(--gridline); stroke-width: 1; }
@@ -184,6 +191,23 @@
   .linechart .cross { stroke: var(--text-muted); stroke-width: 1; }
   .linechart .hit { fill: transparent; }
   .axname { color: var(--text-muted); font-size: 11.5px; margin-top: 6px; }
+
+  /* Narrow screens. The wide tables keep their own horizontal scroll; the page
+     body never scrolls sideways. */
+  @media (max-width: 640px) {
+    .wrap { padding: 24px 12px 56px; }
+    .card { padding: 16px 14px; }
+    header h1 { font-size: 21px; }
+    .hero { gap: 20px 24px; }
+    .stat .value { font-size: 30px; }
+    .stat .note { max-width: none; }
+    /* Bar rows stack: the label sits above its own bar instead of being
+       squeezed into a column that cannot hold it. */
+    .row { grid-template-columns: 1fr; gap: 3px; }
+    .row .name { text-align: left; }
+    .legend { gap: 10px 16px; flex-wrap: wrap; }
+    .dimbar { gap: 10px 14px; }
+  }
   .note-inline { color: var(--text-muted); font-size: 11.5px; margin: -8px 0 16px; }
 
   /* Failures */
@@ -288,11 +312,13 @@
     <div class="card" id="sweepSection">
       <h2>Concurrency sweeps</h2>
       <p class="sub">How a configuration behaves as simultaneous requests pile up.
-        Each request sends a 786-token prompt and is forced to emit exactly 256
-        tokens, so throughput reflects the server rather than how much the model
-        felt like saying. Produced by <code>bench.py</code>.</p>
-      <p class="note-inline">Colours here identify <em>configurations</em>, not models —
-        every sweep below is the same Qwen3.6-35B-A3B.</p>
+        Every request is forced to emit exactly 256 tokens, so throughput reflects
+        the server rather than how much the model felt like saying. Prompt length
+        varies by sweep — filter on it below. Produced by <code>bench.py</code>.</p>
+      <p class="note-inline">Colours identify <em>configurations</em>, not models.
+        Narrow the sweeps with the filters below.</p>
+      <div class="dimbar" id="dimbar" role="group" aria-label="Filter sweeps by dimension"></div>
+      <p class="capnote" id="capnote" hidden></p>
       <ul class="legend" id="legendSweep"></ul>
 
       <h3 style="font-size:13px;margin:22px 0 2px">Total throughput</h3>
@@ -492,9 +518,10 @@
       s.textContent = fmt(Math.round(t));
       axisHost.appendChild(s);
     }
-    // axis sits under the plot column only
-    axisHost.parentElement.style.marginLeft =
-      getComputedStyle(host.querySelector('.row')).gridTemplateColumns.split(' ')[0];
+    // Axis sits under the plot column. When the rows stack on a narrow screen
+    // the grid is a single column, so there is no label gutter to offset by.
+    const cols = getComputedStyle(host.querySelector('.row')).gridTemplateColumns.split(' ');
+    axisHost.parentElement.style.marginLeft = cols.length > 1 ? cols[0] : '0px';
   }
 
   // --- table --------------------------------------------------------------
@@ -619,7 +646,14 @@
 
   function drawLine(svg, series, pick, fmtVal) {
     svg.innerHTML = '';
-    const W = 880, H = 300, L = 56, R = 104, T = 14, B = 36;
+    // Render at the container's real pixel width rather than scaling a fixed
+    // viewBox, so tick and label text stays at its true size on a phone.
+    const W = Math.max(280, Math.floor(svg.parentElement.clientWidth) || 880);
+    const narrow = W < 560;
+    const H = narrow ? 240 : 300;
+    // No right gutter when narrow: end labels are dropped there anyway.
+    const L = narrow ? 42 : 56, R = narrow ? 14 : 104, T = 14, B = 36;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
     const pw = W - L - R, ph = H - T - B;
     const xs = [...new Set(series.flatMap(s => s.levels.map(l => l.concurrency)))].sort((a, b) => a - b);
     if (!xs.length) return;
@@ -673,7 +707,7 @@
       .filter(Boolean)
       .sort((a, b) => Y(pick(a.p)) - Y(pick(b.p)));
     const collide = ends.some((e, i) => i > 0 && Math.abs(Y(pick(e.p)) - Y(pick(ends[i - 1].p))) < 14);
-    if (!collide) {
+    if (!collide && !narrow) {
       for (const e of ends) {
         const x = X(e.p.concurrency), y = Y(pick(e.p));
         svg.appendChild(svgEl('circle', { cx: x + 12, cy: y - 3, r: 3.5, fill: e.s.color }));
@@ -722,15 +756,78 @@
     });
   }
 
+  // Dimension filters. Keys come from the data, so a new --dim tag in bench.py
+  // shows up here without touching this file. `model` is excluded: the filter
+  // row at the top of the page already scopes it.
+  const DIM_ORDER = ['prompt', 'seqs', 'vision', 'graphs', 'mtp'];
+  const DIM_LABEL = { prompt: 'Prompt', seqs: 'Max seqs', vision: 'Vision',
+                      graphs: 'CUDA graphs', mtp: 'MTP' };
+  const dimKeys = DIM_ORDER.filter(k => sweeps.some(s => s.dimensions && s.dimensions[k] != null));
+  const dimState = Object.fromEntries(dimKeys.map(k => [k, 'all']));
+  const MAX_SERIES = 8;   // the validated palette; never cycle past it
+
+  function buildDimBar() {
+    const bar = $('dimbar');
+    bar.innerHTML = '';
+    for (const k of dimKeys) {
+      const vals = [...new Set(sweeps.map(s => s.dimensions[k]).filter(v => v != null))]
+        .sort((a, b) => (parseFloat(a) - parseFloat(b)) || String(a).localeCompare(String(b)));
+      if (vals.length < 2) continue;   // a dimension with one value filters nothing
+      const g = document.createElement('div');
+      g.className = 'dimgroup';
+      const lab = document.createElement('span');
+      lab.className = 'glab';
+      lab.textContent = DIM_LABEL[k] || k;
+      g.appendChild(lab);
+      for (const v of ['all', ...vals]) {
+        const b = document.createElement('button');
+        b.className = 'chip';
+        b.type = 'button';
+        b.textContent = v === 'all' ? 'All' : v;
+        b.setAttribute('aria-pressed', String(dimState[k] === v));
+        b.setAttribute('aria-label', `${DIM_LABEL[k] || k}: ${v}`);
+        b.addEventListener('click', () => {
+          dimState[k] = v;
+          for (const sib of g.querySelectorAll('.chip')) sib.setAttribute('aria-pressed', String(sib === b));
+          hideTip();
+          renderSweeps(currentModelFilter);
+        });
+        g.appendChild(b);
+      }
+      bar.appendChild(g);
+    }
+  }
+
   function renderSweeps(filter) {
     const section = $('sweepSection');
-    const list = filter === 'all' ? sweeps : sweeps.filter(s => s.model === filter);
-    if (!list.length) { section.hidden = true; return; }
+    let list = sweeps.filter(s =>
+      (filter === 'all' || s.model === filter) &&
+      dimKeys.every(k => dimState[k] === 'all' || (s.dimensions && s.dimensions[k] === dimState[k])));
+
+    const note = $('capnote');
+    if (!list.length) {
+      section.hidden = false;
+      note.hidden = false;
+      note.textContent = 'No sweep matches these filters.';
+      $('legendSweep').innerHTML = '';
+      $('chartTput').innerHTML = '';
+      $('chartTtft').innerHTML = '';
+      $('sweepBody').innerHTML = '';
+      return;
+    }
     section.hidden = false;
+    if (list.length > MAX_SERIES) {
+      note.hidden = false;
+      note.textContent = `Showing ${MAX_SERIES} of ${list.length} sweeps — the palette holds ` +
+        `${MAX_SERIES} distinct colours. Narrow the filters to see the rest; all of them are in the table.`;
+    } else {
+      note.hidden = true;
+    }
+    const charted = list.slice(0, MAX_SERIES);
 
     const lg = $('legendSweep');
     lg.innerHTML = '';
-    for (const s of list) {
+    for (const s of charted) {
       const li = document.createElement('li');
       const sw = document.createElement('span');
       sw.className = 'swatch';
@@ -741,8 +838,8 @@
       lg.appendChild(li);
     }
 
-    drawLine($('chartTput'), list, l => l.total_tok_s, v => Math.round(v).toLocaleString('en-US') + ' tok/s');
-    drawLine($('chartTtft'), list, l => l.ttft_p95_s, v => v.toFixed(2) + ' s');
+    drawLine($('chartTput'), charted, l => l.total_tok_s, v => Math.round(v).toLocaleString('en-US') + ' tok/s');
+    drawLine($('chartTtft'), charted, l => l.ttft_p95_s, v => v.toFixed(2) + ' s');
 
     const tb = $('sweepBody');
     tb.innerHTML = '';
@@ -790,14 +887,27 @@
     renderSweeps(filter);
   }
 
-  for (const btn of document.querySelectorAll('.chip')) {
+  let currentModelFilter = 'all';
+  for (const btn of document.querySelectorAll('.filters .chip')) {
     btn.addEventListener('click', () => {
-      for (const b of document.querySelectorAll('.chip')) b.setAttribute('aria-pressed', String(b === btn));
+      for (const b of document.querySelectorAll('.filters .chip')) {
+        b.setAttribute('aria-pressed', String(b === btn));
+      }
       hideTip();
-      render(btn.dataset.filter);
+      currentModelFilter = btn.dataset.filter;
+      render(currentModelFilter);
     });
   }
+  buildDimBar();
   render('all');
+
+  // The line charts are sized in real pixels, so they need redrawing when the
+  // viewport changes. Debounced; the bar charts are CSS-driven and need nothing.
+  let resizeTimer;
+  addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { hideTip(); renderSweeps(currentModelFilter); }, 150);
+  });
 
   const f = $('footer');
   f.textContent = data.method.workload + ' · ' + data.method.warmup + '.';

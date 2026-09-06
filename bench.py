@@ -236,7 +236,17 @@ def main():
     ap.add_argument("--timeout", type=int, default=600)
     ap.add_argument("--out", help="merge the sweep into this JSON file")
     ap.add_argument("--notes", help="free-text note stored with the sweep")
+    ap.add_argument("--dim", action="append", metavar="KEY=VALUE", default=[],
+                    help="dimension tag for filtering, repeatable "
+                         "(e.g. --dim seqs=32 --dim vision=off)")
     args = ap.parse_args()
+
+    dimensions = {}
+    for d in args.dim:
+        if "=" not in d:
+            raise SystemExit(f"bench.py: --dim expects KEY=VALUE, got {d!r}")
+        k, v = d.split("=", 1)
+        dimensions[k.strip()] = v.strip()
 
     levels = [int(x) for x in args.concurrency.split(",") if x.strip()]
     info = server_info(args.base_url)
@@ -296,6 +306,14 @@ def main():
             "thinking": False,
         },
         "levels": entries,
+    }
+    # Dimensions drive the filters on the results page. Always record the two
+    # the sweep knows about itself, then layer the caller's tags on top.
+    sweep["dimensions"] = {
+        "model": model,
+        "prompt": f"{entries[0]['prompt_tokens']} tok" if entries and entries[0].get("prompt_tokens")
+                  else f"~{args.prompt_words} words",
+        **dimensions,
     }
     if args.notes:
         sweep["notes"] = args.notes

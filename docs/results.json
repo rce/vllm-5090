@@ -275,7 +275,15 @@
           "latency_p95_s": 3.402
         }
       ],
-      "notes": "profiles/qwen3.6-35b-a3b.env unchanged; no MTP"
+      "notes": "profiles/qwen3.6-35b-a3b.env unchanged; no MTP",
+      "dimensions": {
+        "model": "Qwen3.6-35B-A3B",
+        "prompt": "786 tok",
+        "seqs": "8",
+        "vision": "on",
+        "graphs": "on",
+        "mtp": "off"
+      }
     },
     {
       "label": "qwen3.6-35b-a3b max-num-seqs 32",
@@ -383,7 +391,15 @@
           "latency_p95_s": 3.228
         }
       ],
-      "notes": "profiles/qwen3.6-35b-a3b.env with MAX_NUM_SEQS=32; no MTP. KV pool 370,189 tokens."
+      "notes": "profiles/qwen3.6-35b-a3b.env with MAX_NUM_SEQS=32; no MTP. KV pool 370,189 tokens.",
+      "dimensions": {
+        "model": "Qwen3.6-35B-A3B",
+        "prompt": "786 tok",
+        "seqs": "32",
+        "vision": "on",
+        "graphs": "on",
+        "mtp": "off"
+      }
     },
     {
       "label": "qwen3.6-35b-a3b 16K prompt, seqs 8",
@@ -491,7 +507,15 @@
           "latency_p95_s": 26.89
         }
       ],
-      "notes": "long-context sweep; profile default MAX_NUM_SEQS=8; KV pool 377,274 tokens"
+      "notes": "long-context sweep; profile default MAX_NUM_SEQS=8; KV pool 377,274 tokens",
+      "dimensions": {
+        "model": "Qwen3.6-35B-A3B",
+        "prompt": "16K tok",
+        "seqs": "8",
+        "vision": "on",
+        "graphs": "on",
+        "mtp": "off"
+      }
     },
     {
       "label": "qwen3.6-35b-a3b 16K prompt, seqs 32",
@@ -599,7 +623,15 @@
           "latency_p95_s": 24.142
         }
       ],
-      "notes": "long-context sweep; MAX_NUM_SEQS=32"
+      "notes": "long-context sweep; MAX_NUM_SEQS=32",
+      "dimensions": {
+        "model": "Qwen3.6-35B-A3B",
+        "prompt": "16K tok",
+        "seqs": "32",
+        "vision": "on",
+        "graphs": "on",
+        "mtp": "off"
+      }
     },
     {
       "label": "qwen3.8-27b default",
@@ -707,7 +739,15 @@
           "latency_p95_s": 45.177
         }
       ],
-      "notes": "profiles/qwen3.8-27b.env unchanged; vision on, eager, MAX_NUM_SEQS=8; KV pool 61,895 tokens"
+      "notes": "profiles/qwen3.8-27b.env unchanged; vision on, eager, MAX_NUM_SEQS=8; KV pool 61,895 tokens",
+      "dimensions": {
+        "model": "Qwen3.8-27B",
+        "prompt": "786 tok",
+        "seqs": "8",
+        "vision": "on",
+        "graphs": "off",
+        "mtp": "off"
+      }
     },
     {
       "label": "qwen3.8-27b seqs 32",
@@ -815,7 +855,15 @@
           "latency_p95_s": 34.438
         }
       ],
-      "notes": "profiles/qwen3.8-27b.env with MAX_NUM_SEQS=32; vision on, eager; KV pool 60,681 tokens"
+      "notes": "profiles/qwen3.8-27b.env with MAX_NUM_SEQS=32; vision on, eager; KV pool 60,681 tokens",
+      "dimensions": {
+        "model": "Qwen3.8-27B",
+        "prompt": "786 tok",
+        "seqs": "32",
+        "vision": "on",
+        "graphs": "off",
+        "mtp": "off"
+      }
     },
     {
       "label": "qwen3.8-27b MTP, text-only",
@@ -923,7 +971,15 @@
           "latency_p95_s": 26.465
         }
       ],
-      "notes": "SPEC_DECODE=1 LANGUAGE_MODEL_ONLY=1, MAX_NUM_SEQS=8 (profile default); KV pool 70,087 tokens"
+      "notes": "SPEC_DECODE=1 LANGUAGE_MODEL_ONLY=1, MAX_NUM_SEQS=8 (profile default); KV pool 70,087 tokens",
+      "dimensions": {
+        "model": "Qwen3.8-27B",
+        "prompt": "786 tok",
+        "seqs": "8",
+        "vision": "off",
+        "graphs": "off",
+        "mtp": "on"
+      }
     },
     {
       "label": "qwen3.8-27b text-only, CUDA graphs",
@@ -1031,7 +1087,15 @@
           "latency_p95_s": 20.358
         }
       ],
-      "notes": "ENFORCE_EAGER=0 LANGUAGE_MODEL_ONLY=1 MAX_NUM_SEQS=32; no MTP; KV pool 53,399 tokens"
+      "notes": "ENFORCE_EAGER=0 LANGUAGE_MODEL_ONLY=1 MAX_NUM_SEQS=32; no MTP; KV pool 53,399 tokens",
+      "dimensions": {
+        "model": "Qwen3.8-27B",
+        "prompt": "786 tok",
+        "seqs": "32",
+        "vision": "off",
+        "graphs": "on",
+        "mtp": "off"
+      }
     },
     {
       "label": "qwen3.8-27b text-only, eager",
@@ -1139,7 +1203,15 @@
           "latency_p95_s": 22.845
         }
       ],
-      "notes": "control for the CUDA graphs test: LANGUAGE_MODEL_ONLY=1 MAX_NUM_SEQS=32, ENFORCE_EAGER=1; no MTP; KV pool 121,362 tokens"
+      "notes": "control for the CUDA graphs test: LANGUAGE_MODEL_ONLY=1 MAX_NUM_SEQS=32, ENFORCE_EAGER=1; no MTP; KV pool 121,362 tokens",
+      "dimensions": {
+        "model": "Qwen3.8-27B",
+        "prompt": "786 tok",
+        "seqs": "32",
+        "vision": "off",
+        "graphs": "off",
+        "mtp": "off"
+      }
     }
   ]
 }
