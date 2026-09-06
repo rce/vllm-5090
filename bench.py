@@ -307,12 +307,13 @@ def main():
         },
         "levels": entries,
     }
-    # Dimensions drive the filters on the results page. Always record the two
+    # Dimensions drive the filters on the results page. Always record the three
     # the sweep knows about itself, then layer the caller's tags on top.
     sweep["dimensions"] = {
         "model": model,
         "prompt": f"{entries[0]['prompt_tokens']} tok" if entries and entries[0].get("prompt_tokens")
                   else f"~{args.prompt_words} words",
+        "output": f"{args.output_tokens} tok",
         **dimensions,
     }
     if args.notes:

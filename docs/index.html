@@ -312,9 +312,10 @@
     <div class="card" id="sweepSection">
       <h2>Concurrency sweeps</h2>
       <p class="sub">How a configuration behaves as simultaneous requests pile up.
-        Every request is forced to emit exactly 256 tokens, so throughput reflects
-        the server rather than how much the model felt like saying. Prompt length
-        varies by sweep — filter on it below. Produced by <code>bench.py</code>.</p>
+        Every request is forced to emit a fixed number of tokens (256 unless the
+        sweep says otherwise), so throughput reflects the server rather than how
+        much the model felt like saying. Prompt and output length vary by sweep —
+        filter on them below. Produced by <code>bench.py</code>.</p>
       <p class="note-inline">Colours identify <em>configurations</em>, not models.
         Narrow the sweeps with the filters below.</p>
       <div class="dimbar" id="dimbar" role="group" aria-label="Filter sweeps by dimension"></div>
@@ -759,8 +760,8 @@
   // Dimension filters. Keys come from the data, so a new --dim tag in bench.py
   // shows up here without touching this file. `model` is excluded: the filter
   // row at the top of the page already scopes it.
-  const DIM_ORDER = ['prompt', 'seqs', 'vision', 'graphs', 'mtp'];
-  const DIM_LABEL = { prompt: 'Prompt', seqs: 'Max seqs', vision: 'Vision',
+  const DIM_ORDER = ['prompt', 'output', 'seqs', 'vision', 'graphs', 'mtp'];
+  const DIM_LABEL = { prompt: 'Prompt', output: 'Output', seqs: 'Max seqs', vision: 'Vision',
                       graphs: 'CUDA graphs', mtp: 'MTP' };
   const dimKeys = DIM_ORDER.filter(k => sweeps.some(s => s.dimensions && s.dimensions[k] != null));
   const dimState = Object.fromEntries(dimKeys.map(k => [k, 'all']));
