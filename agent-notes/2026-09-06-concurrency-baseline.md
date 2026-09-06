@@ -35,12 +35,44 @@ number used a ~10-token prompt and let the model stop on its own, this one uses
 a 786-token prompt and forces exactly 256 tokens. This is the number to quote
 going forward, and the reason `bench.py` exists.
 
+## Follow-up: MAX_NUM_SEQS=32
+
+Confirmed — the cap was the constraint, and lifting it is close to free. Same
+sweep, `MAX_NUM_SEQS=32`, KV pool 370,189 tokens (down from 379,046; more
+sequence state, no meaningful loss).
+
+| Concurrency | total tok/s @ 8 | total tok/s @ 32 | TTFT p95 @ 8 | TTFT p95 @ 32 |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 262 | 259 | 0.068 s | 0.068 s |
+| 2 | 389 | 376 | 0.132 s | 0.200 s |
+| 4 | 746 | 709 | 0.142 s | 0.208 s |
+| 8 | 1,223 | 1,180 | 0.228 s | 0.284 s |
+| 16 | 1,211 | **1,861** | 1.918 s | **0.486 s** |
+| 32 | — | **2,546** | — | 0.884 s |
+
+At concurrency 16 the higher cap wins on *both* axes at once: +54% throughput
+and a quarter of the tail latency. That is the queueing disappearing, not a
+tradeoff. At 32 it is still climbing — 2,546 tok/s and no plateau in sight, so
+the real ceiling has not been found yet.
+
+The cost is a consistent 3-5% at concurrency 1-8. Small, and possibly noise,
+but it leans the same way at every level so probably real: more sequence slots
+means more per-step scheduling and state.
+
+**Not changed in the profile.** The recipe's `--max-num-seqs 8` is likely tuned
+for long-context serving, and this sweep does not test that: prompts here are
+786 tokens, while vLLM reports only 5.65x max concurrency at the full 65,536
+context. Thirty-two concurrent 64K sequences would need several million KV
+tokens and would preempt. So 32 is right for short-prompt, many-caller work and
+8 may still be right for long documents — that is a workload decision, not a
+benchmark one.
+
 ## Worth trying next
 
-- `MAX_NUM_SEQS=16` or `32` and re-run — the current cap is the thing bounding
-  the plateau, and there is KV pool to spare (380,817 tokens).
+- Push past 32 (64, 128) to find where throughput actually turns over.
+- A long-prompt sweep (4K, 16K, 32K) — the case where the recipe's cap of 8
+  probably earns its keep, and the one this workload cannot speak to.
 - The same sweep with `SPEC_DECODE=1`. MTP helps single-stream, but speculative
   decoding usually loses its advantage under batch load; worth confirming rather
   than assuming.
 - The 27B profile for comparison, expecting a much lower plateau.
-- Longer prompts (4K, 16K) to see prefill cost separate from decode.
