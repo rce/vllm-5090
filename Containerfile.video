@@ -1,0 +1,21 @@
+# Video generation on the same RTX 5090, via diffusers.
+#
+# Layered on the vLLM image rather than a fresh PyTorch base because that
+# image's torch (2.13+cu130) is already proven on sm120 here, and it is on
+# disk. Nothing from vLLM itself is used; video.py drives diffusers directly.
+#
+# diffusers is pinned to a main-branch commit: Wan2.2 and LTX-2.5 both want
+# features newer than the last release (v0.40.0, 2026-08-20).
+#
+#   podman build -f Containerfile.video -t video-5090 .
+#   ./video.sh --model wan2.2-5b --label "wan2.2-5b 720p" --out docs/results.json
+FROM docker.io/vllm/vllm-openai:v0.28.0
+
+RUN pip install --no-cache-dir \
+      "diffusers @ https://github.com/huggingface/diffusers/archive/c5469b7ceb60.tar.gz" \
+      imageio imageio-ffmpeg ftfy sentencepiece protobuf
+
+ENV HF_HOME=/root/.cache/huggingface
+
+WORKDIR /work
+ENTRYPOINT ["python3", "/work/video.py"]

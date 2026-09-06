@@ -7,6 +7,8 @@ bench.py                 Synthetic concurrency sweep against a running server
 quality.py               Divergence probe: does a flag change what the model says? (docs/divergence.md)
 quality/prompts.jsonl    The fixed prompt set the probe scores; captures land in quality/captures/ (untracked)
 agentic.py               Tool-call smoke checks and a replayed agent-loop benchmark (warm vs cold prefix cache)
+Containerfile.video      diffusers on top of the vLLM image, for the video generation side
+video.sh / video.py      Video generation length/speed sweep: how long a clip costs, how long a clip fits
 docs/                    Publicly viewable interactive page for browsing benchmark results
 docs/results.json        The actual benchmark results
 README.md                Human written document presenting the project and repository
@@ -50,3 +52,10 @@ the same way sweeps do; the raw captures do not go in git.
 tool calls survive the server's parsers, `loop` replays a growing coding-agent
 transcript and reports per-turn TTFT with and without prefix caching. Both merge
 into `docs/results.json` (`toolcalls`, `loops`).
+
+`video.py` is the same idea for video generation: one prompt, one seed, clips
+of growing length until VRAM runs out, reporting wall time, per-step time,
+decode time and peak VRAM per clip. It runs in its own container
+(`Containerfile.video`, launched by `video.sh`) and merges into
+`docs/results.json` (`videos`). The clips land in `video/out/` (untracked);
+nothing scores them.

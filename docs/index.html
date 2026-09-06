@@ -466,6 +466,49 @@
       </div>
     </div>
 
+    <div class="card" id="videoSection" hidden>
+      <h2>Video generation</h2>
+      <p class="sub">A different workload on the same card: text-to-video diffusion models
+        through <code>diffusers</code>, one fixed prompt and seed, the clip made longer and
+        longer until 32 GB runs out. Nothing here judges the pictures; it answers how long a
+        clip costs and how long a clip fits. Produced by <code>video.py</code>.</p>
+      <p class="note-inline">Colours identify <em>configurations</em>. The x axis is clip
+        length in seconds of video.</p>
+      <ul class="legend" id="legendVideo"></ul>
+
+      <h3 style="font-size:13px;margin:22px 0 2px">Wall time per clip</h3>
+      <p class="sub">Denoising plus VAE decode, prompt already encoded. Lower is better; the
+        curve bends upward because attention cost grows faster than the frame count.</p>
+      <svg class="linechart" id="chartVideoWall" viewBox="0 0 880 300" role="img"></svg>
+      <div class="axname">seconds of video</div>
+
+      <h3 style="font-size:13px;margin:22px 0 2px">Peak VRAM</h3>
+      <p class="sub">Peak allocated during the clip, weights included. The card has about
+        31.4 GB usable.</p>
+      <svg class="linechart" id="chartVideoVram" viewBox="0 0 880 300" role="img"></svg>
+      <div class="axname">seconds of video</div>
+
+      <h3 style="font-size:13px;margin:26px 0 10px">Every clip</h3>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Configuration</th>
+              <th scope="col">Frames</th>
+              <th scope="col">Clip</th>
+              <th scope="col">Wall</th>
+              <th scope="col">Per step</th>
+              <th scope="col">Decode</th>
+              <th scope="col">Video s / min</th>
+              <th scope="col">Peak VRAM</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody id="videoBody"></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="card">
       <h2>What did not work</h2>
       <p class="sub">Recorded because these are the configurations you would reach for first.</p>
@@ -1295,6 +1338,72 @@
     }
   }
 
+  // --- video generation ---------------------------------------------------
+  // One series per configuration; x is clip length. A level that hit OOM has
+  // no timing and is left off the charts but kept in the table.
+  const videos = (data.videos || []).map((v, i) => ({ ...v, color: SWEEP_COLORS[i % SWEEP_COLORS.length] }));
+
+  function renderVideos(filter) {
+    const section = $('videoSection');
+    const list = videos.filter(v => filter === 'all' || v.model === filter);
+    section.hidden = !list.length;
+    if (!list.length) return;
+
+    const lg = $('legendVideo');
+    lg.innerHTML = '';
+    for (const v of list) {
+      const li = document.createElement('li');
+      const sw = document.createElement('span');
+      sw.className = 'swatch';
+      sw.style.background = v.color;
+      const tx = document.createElement('span');
+      tx.textContent = v.label;
+      li.append(sw, tx);
+      lg.appendChild(li);
+    }
+
+    const series = list.map(v => ({ label: v.label, color: v.color, levels: v.levels }));
+    const xTitle = (sec) => {
+      const lv = series.map(s => s.levels.find(l => l.seconds === sec)).find(Boolean);
+      return sec + ' s of video' + (lv ? ' · ' + lv.frames + ' frames' : '');
+    };
+    drawLine($('chartVideoWall'), series, l => l.status === 'ok' ? l.wall_s : null,
+      v => v >= 100 ? Math.round(v) + ' s' : v.toFixed(1) + ' s', { xKey: 'seconds', xTitle });
+    drawLine($('chartVideoVram'), series, l => l.peak_vram_gb != null ? l.peak_vram_gb : null,
+      v => v.toFixed(1) + ' GB', { xKey: 'seconds', xTitle });
+
+    const tb = $('videoBody');
+    tb.innerHTML = '';
+    for (const v of list) {
+      for (const l of v.levels) {
+        const tr = document.createElement('tr');
+        const first = document.createElement('td');
+        const dot = document.createElement('span');
+        dot.className = 'dot';
+        dot.style.background = v.color;
+        first.append(dot, document.createTextNode(v.label));
+        tr.appendChild(first);
+        const ok = l.status === 'ok';
+        const cells = [
+          l.frames,
+          l.seconds.toFixed(1) + ' s',
+          ok ? l.wall_s.toFixed(1) + ' s' : '—',
+          ok && l.s_per_step != null ? l.s_per_step.toFixed(2) + ' s' : '—',
+          ok && l.decode_s != null ? l.decode_s.toFixed(1) + ' s' : '—',
+          ok ? l.video_s_per_min.toFixed(2) : '—',
+          l.peak_vram_gb != null ? l.peak_vram_gb.toFixed(1) + ' GB' : '—',
+          l.status,
+        ];
+        for (const c of cells) {
+          const td = document.createElement('td');
+          td.textContent = c;
+          tr.appendChild(td);
+        }
+        tb.appendChild(tr);
+      }
+    }
+  }
+
   // --- render + filter ----------------------------------------------------
   function render(filter) {
     const list = filter === 'all' ? runs : runs.filter(r => r.model === filter);
@@ -1312,6 +1421,7 @@
     renderDivergence(filter);
     renderToolcalls(filter);
     renderLoops(filter);
+    renderVideos(filter);
   }
 
   // Model chips come from every section's data, so a model that only has a
@@ -1323,6 +1433,7 @@
     ...(data.jitter || []).map(j => j.model),
     ...(data.toolcalls || []).map(t => t.model),
     ...(data.loops || []).map(l => l.model),
+    ...(data.videos || []).map(v => v.model),
   ].filter(Boolean))];
   for (const m of allModels) {
     const b = document.createElement('button');
@@ -1354,7 +1465,7 @@
   let resizeTimer;
   addEventListener('resize', () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => { hideTip(); renderSweeps(currentModelFilter); renderLoops(currentModelFilter); }, 150);
+    resizeTimer = setTimeout(() => { hideTip(); renderSweeps(currentModelFilter); renderLoops(currentModelFilter); renderVideos(currentModelFilter); }, 150);
   });
 
   const f = $('footer');

@@ -8,3 +8,6 @@ __pycache__/
 # Divergence-probe captures are several MB each; only the compare summaries
 # in docs/results.json are tracked.
 quality/captures/
+
+# Generated clips are large and not results; the numbers go in docs/results.json.
+video/out/
