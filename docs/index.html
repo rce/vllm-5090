@@ -1,0 +1,790 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vLLM on one RTX 5090 — benchmark results</title>
+<link rel="preload" href="results.json" as="fetch" crossorigin="anonymous">
+<style>
+  :root {
+    color-scheme: light;
+    --page:           #f9f9f7;
+    --surface-1:      #fcfcfb;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    /* Categorical slots 1-3, validated for both modes. Model identity uses
+       the first two; sweep charts reuse the ordered slots for configurations. */
+    --series-1:       #2a78d6;
+    --series-2:       #eb6834;
+    --series-3:       #1baf7a;
+    --series-moe:     #2a78d6;
+    --series-dense:   #eb6834;
+    --status-critical:#d03b3b;
+    --status-warning: #fab219;
+    --status-serious: #ec835a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page:           #0d0d0d;
+      --surface-1:      #1a1a19;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --series-1:       #3987e5;
+      --series-2:       #d95926;
+      --series-3:       #199e70;
+      --series-moe:     #3987e5;
+      --series-dense:   #d95926;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page:           #0d0d0d;
+    --surface-1:      #1a1a19;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --baseline:       #383835;
+    --border:         rgba(255,255,255,0.10);
+    --series-1:       #3987e5;
+    --series-2:       #d95926;
+    --series-3:       #199e70;
+    --series-moe:     #3987e5;
+    --series-dense:   #d95926;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text-primary);
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 40px 20px 72px; }
+
+  header h1 { font-size: 26px; line-height: 1.25; margin: 0 0 8px; letter-spacing: -0.01em; }
+  header p  { margin: 0; color: var(--text-secondary); max-width: 68ch; }
+  .meta { margin-top: 14px; color: var(--text-muted); font-size: 12.5px; }
+  .meta span::after { content: " · "; color: var(--baseline); }
+  .meta span:last-child::after { content: ""; }
+
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 22px;
+    margin-top: 22px;
+  }
+  .card > h2 {
+    font-size: 15px; margin: 0 0 3px; letter-spacing: -0.005em;
+  }
+  .card > .sub { margin: 0 0 18px; color: var(--text-secondary); font-size: 12.5px; }
+
+  /* Hero */
+  .hero { display: flex; flex-wrap: wrap; gap: 28px 44px; align-items: flex-start; }
+  .stat .label { color: var(--text-secondary); font-size: 12.5px; margin-bottom: 4px; }
+  .stat .value { font-size: 38px; line-height: 1.05; letter-spacing: -0.02em; }
+  .stat .note  { color: var(--text-muted); font-size: 12px; margin-top: 5px; max-width: 30ch; }
+
+  /* Filters */
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 24px; }
+  .filters .lab { color: var(--text-secondary); font-size: 12.5px; margin-right: 4px; }
+  .chip {
+    font: inherit; font-size: 12.5px;
+    background: var(--surface-1); color: var(--text-secondary);
+    border: 1px solid var(--border); border-radius: 999px;
+    padding: 5px 13px; cursor: pointer;
+  }
+  .chip:hover { color: var(--text-primary); }
+  .chip[aria-pressed="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .chip:focus-visible { outline: 2px solid var(--series-moe); outline-offset: 2px; }
+
+  /* Legend */
+  .legend { display: flex; gap: 18px; margin: 0 0 16px; padding: 0; list-style: none; font-size: 12.5px; color: var(--text-secondary); }
+  .legend li { display: flex; align-items: center; gap: 7px; }
+  .swatch { width: 11px; height: 11px; border-radius: 2px; flex: none; }
+
+  /* Bars */
+  .chart { display: flex; flex-direction: column; gap: 10px; }
+  .row { display: grid; grid-template-columns: minmax(120px, 246px) 1fr; gap: 14px; align-items: center; }
+  .row .name { color: var(--text-secondary); font-size: 12.5px; text-align: right; }
+  .track {
+    position: relative; height: 24px;
+    display: flex; align-items: center; gap: 9px;
+    border-left: 1px solid var(--baseline);
+    padding-left: 0;
+    cursor: default;
+  }
+  .bar { height: 24px; border-radius: 0 4px 4px 0; min-width: 2px; transition: filter .12s; }
+  .track:hover .bar, .track:focus-visible .bar { filter: brightness(1.12); }
+  .track:focus-visible { outline: 2px solid var(--text-muted); outline-offset: 3px; border-radius: 3px; }
+  .val { font-size: 12.5px; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .axis { margin-top: 12px; padding-left: 0; color: var(--text-muted); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+  .axis .inner { display: flex; justify-content: space-between; }
+  .axis-title { margin-top: 8px; color: var(--text-muted); font-size: 11.5px; }
+
+  /* Tooltip */
+  #tip {
+    position: fixed; z-index: 20; pointer-events: none; opacity: 0;
+    transition: opacity .1s;
+    background: var(--surface-1); color: var(--text-primary);
+    border: 1px solid var(--border); border-radius: 7px;
+    padding: 9px 11px; font-size: 12.5px; max-width: 300px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.14);
+  }
+  #tip .t-val { font-size: 15px; font-variant-numeric: tabular-nums; }
+  #tip .t-name { color: var(--text-secondary); margin-top: 2px; }
+  #tip .t-meta { color: var(--text-muted); margin-top: 6px; font-size: 11.5px; }
+  #tip .key { display: inline-block; width: 14px; height: 2px; vertical-align: middle; margin-right: 6px; }
+
+  /* Table */
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; min-width: 720px; }
+  th, td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--gridline); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; white-space: normal; min-width: 190px; }
+  thead th { color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--baseline); }
+  tbody td { font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+  tbody td:first-child { color: var(--text-primary); }
+  tbody tr:last-child td { border-bottom: none; }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 8px; vertical-align: baseline; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; }
+
+  /* Line charts */
+  .linechart { width: 100%; height: auto; display: block; overflow: visible; }
+  .linechart .grid { stroke: var(--gridline); stroke-width: 1; }
+  .linechart .axisline { stroke: var(--baseline); stroke-width: 1; }
+  .linechart .tick { fill: var(--text-muted); font-size: 11px; }
+  .linechart .ser { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .linechart .ring { stroke: var(--surface-1); stroke-width: 2; }
+  .linechart .endlab { fill: var(--text-primary); font-size: 11.5px; }
+  .linechart .cross { stroke: var(--text-muted); stroke-width: 1; }
+  .linechart .hit { fill: transparent; }
+  .axname { color: var(--text-muted); font-size: 11.5px; margin-top: 6px; }
+  .note-inline { color: var(--text-muted); font-size: 11.5px; margin: -8px 0 16px; }
+
+  /* Failures */
+  .fail { display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--gridline); }
+  .fail:last-child { border-bottom: none; padding-bottom: 0; }
+  .fail:first-of-type { padding-top: 0; }
+  .fail .ico { flex: none; width: 18px; height: 18px; margin-top: 1px; }
+  .fail .ftitle { font-size: 13px; }
+  .fail .fstate { font-size: 11.5px; color: var(--text-secondary); margin: 2px 0 5px; }
+  .fail .fwhy { color: var(--text-secondary); font-size: 12.5px; }
+  .fail .fcfg { color: var(--text-muted); font-size: 11.5px; margin-top: 5px; }
+
+  .err { color: var(--status-critical); }
+  footer { margin-top: 30px; color: var(--text-muted); font-size: 12px; }
+  a { color: inherit; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>vLLM on one RTX 5090</h1>
+    <p>Serving Qwen3.x locally on a single 32 GiB Blackwell card. Every number here was
+       measured on that machine — single-stream decode, 300-token completions, thinking
+       disabled, cold sample discarded.</p>
+    <div class="meta" id="meta"></div>
+  </header>
+
+  <div id="content" hidden>
+    <div class="card">
+      <div class="hero">
+        <div class="stat">
+          <div class="label">MoE vs dense, same card</div>
+          <div class="value" id="heroRatio">—</div>
+          <div class="note">Qwen3.6-35B-A3B activates 3B parameters per token and leaves
+            room for CUDA graphs. Qwen3.8-27B activates all 27B and cannot.</div>
+        </div>
+        <div class="stat">
+          <div class="label">Fastest configuration</div>
+          <div class="value" id="heroTop">—</div>
+          <div class="note" id="heroTopNote"></div>
+        </div>
+        <div class="stat">
+          <div class="label">Largest KV pool</div>
+          <div class="value" id="heroKv">—</div>
+          <div class="note" id="heroKvNote"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters" role="group" aria-label="Filter by model">
+      <span class="lab">Model</span>
+      <button class="chip" data-filter="all" aria-pressed="true">All</button>
+      <button class="chip" data-filter="Qwen3.6-35B-A3B" aria-pressed="false">Qwen3.6-35B-A3B</button>
+      <button class="chip" data-filter="Qwen3.8-27B" aria-pressed="false">Qwen3.8-27B</button>
+    </div>
+
+    <div class="card">
+      <h2>Decode throughput</h2>
+      <p class="sub">Tokens per second, single stream. Higher is better.</p>
+      <ul class="legend" id="legend"></ul>
+      <div class="chart" id="chartSpeed"></div>
+      <div class="axis"><div class="inner" id="axisSpeed"></div></div>
+      <div class="axis-title">tokens / second</div>
+    </div>
+
+    <div class="card">
+      <h2>KV cache pool</h2>
+      <p class="sub">Tokens the card can hold at that configuration's context length, as
+        reported by vLLM at startup. Rows keep the order of the chart above so the two can
+        be read together; the scale is different, which is why this is a second chart and
+        not a second axis.</p>
+      <ul class="legend" id="legend2"></ul>
+      <div class="chart" id="chartKv"></div>
+      <div class="axis"><div class="inner" id="axisKv"></div></div>
+      <div class="axis-title">KV tokens</div>
+    </div>
+
+    <div class="card">
+      <h2>All measurements</h2>
+      <p class="sub">The same runs in full. Every charted value is here too.</p>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Configuration</th>
+              <th scope="col">Precision</th>
+              <th scope="col">Context</th>
+              <th scope="col">KV tokens</th>
+              <th scope="col">Concurrency</th>
+              <th scope="col">Vision</th>
+              <th scope="col">Graphs</th>
+              <th scope="col">MTP</th>
+              <th scope="col">Accept.</th>
+              <th scope="col">tok/s</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="sweepSection">
+      <h2>Concurrency sweeps</h2>
+      <p class="sub">How a configuration behaves as simultaneous requests pile up.
+        Each request sends a 786-token prompt and is forced to emit exactly 256
+        tokens, so throughput reflects the server rather than how much the model
+        felt like saying. Produced by <code>bench.py</code>.</p>
+      <p class="note-inline">Colours here identify <em>configurations</em>, not models —
+        every sweep below is the same Qwen3.6-35B-A3B.</p>
+      <ul class="legend" id="legendSweep"></ul>
+
+      <h3 style="font-size:13px;margin:22px 0 2px">Total throughput</h3>
+      <p class="sub">Tokens per second across all in-flight requests. Higher is better.</p>
+      <svg class="linechart" id="chartTput" viewBox="0 0 880 300" role="img"></svg>
+      <div class="axname">concurrent requests</div>
+
+      <h3 style="font-size:13px;margin:26px 0 2px">Time to first token, p95</h3>
+      <p class="sub">What a caller waits before anything comes back. Lower is better.</p>
+      <svg class="linechart" id="chartTtft" viewBox="0 0 880 300" role="img"></svg>
+      <div class="axname">concurrent requests</div>
+
+      <h3 style="font-size:13px;margin:26px 0 10px">Every level</h3>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Configuration</th>
+              <th scope="col">Conc.</th>
+              <th scope="col">OK</th>
+              <th scope="col">TTFT p50</th>
+              <th scope="col">TTFT p95</th>
+              <th scope="col">tok/s per stream</th>
+              <th scope="col">total tok/s</th>
+              <th scope="col">Latency p95</th>
+            </tr>
+          </thead>
+          <tbody id="sweepBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>What did not work</h2>
+      <p class="sub">Recorded because these are the configurations you would reach for first.</p>
+      <div id="failures"></div>
+    </div>
+
+    <footer id="footer"></footer>
+  </div>
+
+  <div class="card" id="loading">Loading <code>results.json</code>…</div>
+</div>
+
+<div id="tip" role="status" aria-live="polite"></div>
+
+<script>
+(async function () {
+  const $ = (id) => document.getElementById(id);
+  const fmt = (n) => n.toLocaleString('en-US');
+  const COLOR = { 'Qwen3.6-35B-A3B': 'var(--series-moe)', 'Qwen3.8-27B': 'var(--series-dense)' };
+
+  let data;
+  try {
+    const res = await fetch('results.json', { cache: 'no-cache' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    data = await res.json();
+  } catch (e) {
+    $('loading').innerHTML = '';
+    const p = document.createElement('p');
+    p.className = 'err';
+    p.textContent = 'Could not load results.json: ' + e.message;
+    const q = document.createElement('p');
+    q.style.color = 'var(--text-secondary)';
+    q.textContent = 'Opening this file directly from disk blocks the fetch. Serve the directory instead, e.g. python3 -m http.server 8080 --directory docs';
+    $('loading').append(p, q);
+    return;
+  }
+
+  $('loading').hidden = true;
+  $('content').hidden = false;
+
+  // --- meta line -----------------------------------------------------------
+  const hw = data.hardware, sw = data.software;
+  for (const t of [hw.gpu, hw.arch, hw.vram_usable_gib + ' GiB usable',
+                   'vLLM ' + sw.vllm, 'torch ' + sw.torch, hw.runtime, data.generated]) {
+    const s = document.createElement('span');
+    s.textContent = t;
+    $('meta').appendChild(s);
+  }
+
+  // --- runs, sorted fastest first -----------------------------------------
+  const runs = data.runs.slice().sort((a, b) => b.decode_tok_s - a.decode_tok_s);
+
+  const shortName = (r) => {
+    const bits = [];
+    if (r.precision.startsWith('FP8')) bits.push('official FP8');
+    if (r.spec_decode) bits.push('MTP');
+    if (!r.vision) bits.push('text-only');
+    bits.push(Math.round(r.max_model_len / 1024) + 'K ctx');
+    return r.model + ' — ' + bits.join(', ');
+  };
+
+  // --- hero ---------------------------------------------------------------
+  const moeBase = runs.find(r => r.id === 'qwen36-moe-default');
+  const denseBase = runs.find(r => r.id === 'qwen38-dense-default');
+  $('heroRatio').textContent = (moeBase.decode_tok_s / denseBase.decode_tok_s).toFixed(1) + '×';
+  const top = runs[0];
+  $('heroTop').textContent = Math.round(top.decode_tok_s) + ' tok/s';
+  $('heroTopNote').textContent = shortName(top);
+  const bigKv = runs.slice().sort((a, b) => b.kv_tokens - a.kv_tokens)[0];
+  $('heroKv').textContent = fmt(bigKv.kv_tokens);
+  $('heroKvNote').textContent = 'tokens · ' + shortName(bigKv);
+
+  // --- legend (identity never rests on color alone) -----------------------
+  const models = [...new Set(runs.map(r => r.model))];
+  for (const el of [$('legend'), $('legend2')]) {
+    for (const m of models) {
+      const li = document.createElement('li');
+      const sw2 = document.createElement('span');
+      sw2.className = 'swatch';
+      sw2.style.background = COLOR[m];
+      const tx = document.createElement('span');
+      tx.textContent = m;
+      li.append(sw2, tx);
+      el.appendChild(li);
+    }
+  }
+
+  // --- tooltip ------------------------------------------------------------
+  const tip = $('tip');
+  function showTip(ev, run, valueText, metaText) {
+    tip.innerHTML = '';
+    const v = document.createElement('div');
+    v.className = 't-val';
+    const key = document.createElement('span');
+    key.className = 'key';
+    key.style.background = COLOR[run.model];
+    v.append(key, document.createTextNode(valueText));
+    const n = document.createElement('div');
+    n.className = 't-name';
+    n.textContent = shortName(run);
+    const m = document.createElement('div');
+    m.className = 't-meta';
+    m.textContent = metaText;
+    tip.append(v, n, m);
+    tip.style.opacity = '1';
+    moveTip(ev);
+  }
+  function moveTip(ev) {
+    const r = tip.getBoundingClientRect();
+    let x = (ev.clientX ?? 0) + 14, y = (ev.clientY ?? 0) + 16;
+    if (x + r.width > innerWidth - 8) x = innerWidth - r.width - 8;
+    if (y + r.height > innerHeight - 8) y = (ev.clientY ?? 0) - r.height - 12;
+    tip.style.left = x + 'px';
+    tip.style.top = Math.max(8, y) + 'px';
+  }
+  const hideTip = () => { tip.style.opacity = '0'; };
+
+  // --- bar chart builder --------------------------------------------------
+  function drawChart(host, axisHost, list, pick, label, meta) {
+    host.innerHTML = '';
+    axisHost.innerHTML = '';
+    if (!list.length) return;
+    const max = Math.max(...list.map(pick));
+    // clean axis top: round up to a nice number
+    const mag = Math.pow(10, Math.floor(Math.log10(max)));
+    const top2 = Math.ceil(max / (mag / 2)) * (mag / 2);
+
+    for (const r of list) {
+      const row = document.createElement('div');
+      row.className = 'row';
+
+      const name = document.createElement('div');
+      name.className = 'name';
+      name.textContent = shortName(r);
+
+      const track = document.createElement('div');
+      track.className = 'track';
+      track.tabIndex = 0;
+      const bar = document.createElement('div');
+      bar.className = 'bar';
+      bar.style.width = Math.max(0.4, (pick(r) / top2) * 100) + '%';
+      bar.style.background = COLOR[r.model];
+      const val = document.createElement('span');
+      val.className = 'val';
+      val.textContent = label(r);
+      track.append(bar, val);
+
+      const txt = label(r), mtxt = meta(r);
+      track.addEventListener('pointerenter', (e) => showTip(e, r, txt, mtxt));
+      track.addEventListener('pointermove', moveTip);
+      track.addEventListener('pointerleave', hideTip);
+      track.addEventListener('focus', (e) => {
+        const b = track.getBoundingClientRect();
+        showTip({ clientX: b.left + 40, clientY: b.top }, r, txt, mtxt);
+      });
+      track.addEventListener('blur', hideTip);
+      track.setAttribute('aria-label', shortName(r) + ': ' + txt);
+
+      row.append(name, track);
+      host.appendChild(row);
+    }
+
+    for (const t of [0, top2 / 2, top2]) {
+      const s = document.createElement('span');
+      s.textContent = fmt(Math.round(t));
+      axisHost.appendChild(s);
+    }
+    // axis sits under the plot column only
+    axisHost.parentElement.style.marginLeft =
+      getComputedStyle(host.querySelector('.row')).gridTemplateColumns.split(' ')[0];
+  }
+
+  // --- table --------------------------------------------------------------
+  function drawTable(list) {
+    const tb = $('tbody');
+    tb.innerHTML = '';
+    for (const r of list) {
+      const tr = document.createElement('tr');
+      const cells = [
+        null, // built below
+        r.precision,
+        fmt(r.max_model_len),
+        fmt(r.kv_tokens),
+        r.max_concurrency.toFixed(2) + '×',
+        r.vision ? 'yes' : 'no',
+        r.cuda_graphs ? 'on' : 'eager',
+        r.spec_decode ? 'on' : 'off',
+        r.spec_acceptance ? r.spec_acceptance.toFixed(2) : '—',
+        r.decode_tok_s.toFixed(1),
+      ];
+      const first = document.createElement('td');
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.style.background = COLOR[r.model];
+      first.append(dot, document.createTextNode(shortName(r)));
+      tr.appendChild(first);
+      for (let i = 1; i < cells.length; i++) {
+        const td = document.createElement('td');
+        td.textContent = cells[i];
+        tr.appendChild(td);
+      }
+      tb.appendChild(tr);
+    }
+  }
+
+  // --- failures (icon + label, never colour alone) ------------------------
+  const ICON = {
+    oom_at_first_request: { color: 'var(--status-critical)', label: 'OOM on first request',
+      path: 'M12 2 1 21h22L12 2Zm0 6v6m0 3v.5' },
+    oom_at_startup: { color: 'var(--status-serious)', label: 'OOM at startup',
+      path: 'M12 2 1 21h22L12 2Zm0 6v6m0 3v.5' },
+    not_attempted: { color: 'var(--status-warning)', label: 'Not attempted',
+      path: 'M12 22a10 10 0 1 1 0-20 10 10 0 0 1 0 20Zm0-14v6m0 3v.5' },
+  };
+  const fh = $('failures');
+  for (const f of data.failures) {
+    const spec = ICON[f.status] || ICON.not_attempted;
+    const box = document.createElement('div');
+    box.className = 'fail';
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('class', 'ico');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', spec.color);
+    svg.setAttribute('stroke-width', '2');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    p.setAttribute('d', spec.path);
+    svg.appendChild(p);
+
+    const body = document.createElement('div');
+    const t = document.createElement('div');
+    t.className = 'ftitle';
+    t.textContent = f.checkpoint + ' · ' + f.precision;
+    const st = document.createElement('div');
+    st.className = 'fstate';
+    st.textContent = spec.label + (f.weights_gb ? ' · ' + f.weights_gb + ' GB of weights' : '');
+    const why = document.createElement('div');
+    why.className = 'fwhy';
+    why.textContent = f.reason;
+    body.append(t, st, why);
+    if (f.config) {
+      const c = document.createElement('div');
+      c.className = 'fcfg';
+      c.textContent = f.config;
+      body.appendChild(c);
+    }
+    box.append(svg, body);
+    fh.appendChild(box);
+  }
+
+  // --- concurrency sweeps -------------------------------------------------
+  const SWEEP_COLORS = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)'];
+  const sweeps = (data.sweeps || []).map((s, i) => ({ ...s, color: SWEEP_COLORS[i % SWEEP_COLORS.length] }));
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const svgEl = (tag, attrs) => {
+    const n = document.createElementNS(SVGNS, tag);
+    for (const [k, v] of Object.entries(attrs || {})) n.setAttribute(k, v);
+    return n;
+  };
+
+  function showRowsTip(ev, title, rows) {
+    tip.innerHTML = '';
+    const h = document.createElement('div');
+    h.className = 't-name';
+    h.style.marginTop = '0';
+    h.textContent = title;
+    tip.appendChild(h);
+    for (const r of rows) {
+      const line = document.createElement('div');
+      line.className = 't-val';
+      line.style.fontSize = '13px';
+      line.style.marginTop = '4px';
+      const key = document.createElement('span');
+      key.className = 'key';
+      key.style.background = r.color;
+      line.append(key, document.createTextNode(r.value));
+      const sub = document.createElement('div');
+      sub.className = 't-meta';
+      sub.style.marginTop = '1px';
+      sub.textContent = r.label;
+      tip.append(line, sub);
+    }
+    tip.style.opacity = '1';
+    moveTip(ev);
+  }
+
+  function drawLine(svg, series, pick, fmtVal) {
+    svg.innerHTML = '';
+    const W = 880, H = 300, L = 56, R = 104, T = 14, B = 36;
+    const pw = W - L - R, ph = H - T - B;
+    const xs = [...new Set(series.flatMap(s => s.levels.map(l => l.concurrency)))].sort((a, b) => a - b);
+    if (!xs.length) return;
+    const vals = series.flatMap(s => s.levels.map(pick)).filter(v => v != null);
+    if (!vals.length) return;
+    const rawMax = Math.max(...vals);
+    const mag = Math.pow(10, Math.floor(Math.log10(rawMax)));
+    const yMax = Math.ceil(rawMax / (mag / 2)) * (mag / 2);
+    const X = (c) => L + (xs.length === 1 ? pw / 2 : (xs.indexOf(c) / (xs.length - 1)) * pw);
+    const Y = (v) => T + (1 - v / yMax) * ph;
+
+    // gridlines + y ticks. Decimals come from the step size, not the value, so
+    // a 0.5 step never renders 1.5 as "2".
+    const step = yMax / 4;
+    const dec = step >= 1 ? 0 : step >= 0.1 ? 1 : 2;
+    for (let i = 0; i <= 4; i++) {
+      const v = step * i, y = Y(v);
+      svg.appendChild(svgEl('line', { class: i === 0 ? 'axisline' : 'grid', x1: L, x2: L + pw, y1: y, y2: y }));
+      const t = svgEl('text', { class: 'tick', x: L - 10, y: y + 4, 'text-anchor': 'end' });
+      t.textContent = dec ? v.toFixed(dec) : Math.round(v).toLocaleString('en-US');
+      svg.appendChild(t);
+    }
+    // x ticks
+    for (const c of xs) {
+      const t = svgEl('text', { class: 'tick', x: X(c), y: T + ph + 20, 'text-anchor': 'middle' });
+      t.textContent = c;
+      svg.appendChild(t);
+    }
+
+    const cross = svgEl('line', { class: 'cross', y1: T, y2: T + ph, x1: L, x2: L, opacity: 0 });
+    svg.appendChild(cross);
+
+    // series
+    for (const s of series) {
+      const pts = s.levels.filter(l => pick(l) != null);
+      if (!pts.length) continue;
+      svg.appendChild(svgEl('polyline', {
+        class: 'ser', stroke: s.color,
+        points: pts.map(l => `${X(l.concurrency)},${Y(pick(l))}`).join(' '),
+      }));
+      for (const l of pts) {
+        svg.appendChild(svgEl('circle', {
+          class: 'ring', cx: X(l.concurrency), cy: Y(pick(l)), r: 4.5, fill: s.color,
+        }));
+      }
+    }
+
+    // direct end labels, skipped entirely if any two would collide
+    const ends = series
+      .map(s => { const p = s.levels.filter(l => pick(l) != null).pop(); return p ? { s, p } : null; })
+      .filter(Boolean)
+      .sort((a, b) => Y(pick(a.p)) - Y(pick(b.p)));
+    const collide = ends.some((e, i) => i > 0 && Math.abs(Y(pick(e.p)) - Y(pick(ends[i - 1].p))) < 14);
+    if (!collide) {
+      for (const e of ends) {
+        const x = X(e.p.concurrency), y = Y(pick(e.p));
+        svg.appendChild(svgEl('circle', { cx: x + 12, cy: y - 3, r: 3.5, fill: e.s.color }));
+        const t = svgEl('text', { class: 'endlab', x: x + 20, y: y });
+        t.textContent = fmtVal(pick(e.p));
+        svg.appendChild(t);
+      }
+    }
+
+    // crosshair hit layer
+    const hit = svgEl('rect', { class: 'hit', x: L, y: T, width: pw, height: ph, tabindex: 0 });
+    svg.appendChild(hit);
+    let idx = -1;
+    const place = (i, ev) => {
+      idx = i;
+      const c = xs[i];
+      cross.setAttribute('x1', X(c));
+      cross.setAttribute('x2', X(c));
+      cross.setAttribute('opacity', 1);
+      const rows = [];
+      for (const s of series) {
+        const l = s.levels.find(l => l.concurrency === c);
+        if (l && pick(l) != null) rows.push({ color: s.color, label: s.label, value: fmtVal(pick(l)) });
+      }
+      showRowsTip(ev, c + (c === 1 ? ' concurrent request' : ' concurrent requests'), rows);
+    };
+    hit.addEventListener('pointermove', (ev) => {
+      const box = svg.getBoundingClientRect();
+      const rel = (ev.clientX - box.left) / box.width * W;
+      let best = 0, bd = Infinity;
+      xs.forEach((c, i) => { const d = Math.abs(X(c) - rel); if (d < bd) { bd = d; best = i; } });
+      place(best, ev);
+    });
+    hit.addEventListener('pointerleave', () => { cross.setAttribute('opacity', 0); hideTip(); });
+    hit.addEventListener('focus', () => {
+      const box = svg.getBoundingClientRect();
+      place(0, { clientX: box.left + 60, clientY: box.top + 40 });
+    });
+    hit.addEventListener('blur', () => { cross.setAttribute('opacity', 0); hideTip(); });
+    hit.addEventListener('keydown', (ev) => {
+      if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
+      ev.preventDefault();
+      const box = svg.getBoundingClientRect();
+      const next = Math.min(xs.length - 1, Math.max(0, (idx < 0 ? 0 : idx) + (ev.key === 'ArrowRight' ? 1 : -1)));
+      place(next, { clientX: box.left + (X(xs[next]) / W) * box.width, clientY: box.top + 40 });
+    });
+  }
+
+  function renderSweeps(filter) {
+    const section = $('sweepSection');
+    const list = filter === 'all' ? sweeps : sweeps.filter(s => s.model === filter);
+    if (!list.length) { section.hidden = true; return; }
+    section.hidden = false;
+
+    const lg = $('legendSweep');
+    lg.innerHTML = '';
+    for (const s of list) {
+      const li = document.createElement('li');
+      const sw = document.createElement('span');
+      sw.className = 'swatch';
+      sw.style.background = s.color;
+      const tx = document.createElement('span');
+      tx.textContent = s.label;
+      li.append(sw, tx);
+      lg.appendChild(li);
+    }
+
+    drawLine($('chartTput'), list, l => l.total_tok_s, v => Math.round(v).toLocaleString('en-US') + ' tok/s');
+    drawLine($('chartTtft'), list, l => l.ttft_p95_s, v => v.toFixed(2) + ' s');
+
+    const tb = $('sweepBody');
+    tb.innerHTML = '';
+    for (const s of list) {
+      for (const l of s.levels) {
+        const tr = document.createElement('tr');
+        const first = document.createElement('td');
+        const dot = document.createElement('span');
+        dot.className = 'dot';
+        dot.style.background = s.color;
+        first.append(dot, document.createTextNode(s.label));
+        tr.appendChild(first);
+        const cells = [
+          l.concurrency,
+          l.succeeded + '/' + l.requests,
+          l.ttft_p50_s != null ? l.ttft_p50_s.toFixed(3) + ' s' : '—',
+          l.ttft_p95_s != null ? l.ttft_p95_s.toFixed(3) + ' s' : '—',
+          l.decode_tok_s_per_stream != null ? l.decode_tok_s_per_stream.toFixed(1) : '—',
+          l.total_tok_s != null ? Math.round(l.total_tok_s).toLocaleString('en-US') : '—',
+          l.latency_p95_s != null ? l.latency_p95_s.toFixed(2) + ' s' : '—',
+        ];
+        for (const c of cells) {
+          const td = document.createElement('td');
+          td.textContent = c;
+          tr.appendChild(td);
+        }
+        tb.appendChild(tr);
+      }
+    }
+  }
+
+  // --- render + filter ----------------------------------------------------
+  function render(filter) {
+    const list = filter === 'all' ? runs : runs.filter(r => r.model === filter);
+    drawChart($('chartSpeed'), $('axisSpeed'), list,
+      r => r.decode_tok_s,
+      r => r.decode_tok_s.toFixed(1) + ' tok/s',
+      r => 'median of ' + r.decode_samples.length + ' sample' +
+           (r.decode_samples.length === 1 ? '' : 's') + ' · ' + fmt(r.kv_tokens) + ' KV tokens');
+    drawChart($('chartKv'), $('axisKv'), list,
+      r => r.kv_tokens,
+      r => fmt(r.kv_tokens),
+      r => r.max_concurrency.toFixed(2) + '× concurrency at ' + fmt(r.max_model_len) + ' ctx');
+    drawTable(list);
+    renderSweeps(filter);
+  }
+
+  for (const btn of document.querySelectorAll('.chip')) {
+    btn.addEventListener('click', () => {
+      for (const b of document.querySelectorAll('.chip')) b.setAttribute('aria-pressed', String(b === btn));
+      hideTip();
+      render(btn.dataset.filter);
+    });
+  }
+  render('all');
+
+  const f = $('footer');
+  f.textContent = data.method.workload + ' · ' + data.method.warmup + '.';
+})();
+</script>
+</body>
+</html>

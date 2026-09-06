@@ -1,0 +1,380 @@
+{
+  "schema_version": 1,
+  "generated": "2026-09-06",
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 5090",
+    "arch": "Blackwell sm120",
+    "vram_total_mib": 32607,
+    "vram_usable_gib": 31.4,
+    "vram_baseline_mib": 950,
+    "vram_baseline_note": "desktop compositor (kwin_wayland + Xwayland)",
+    "driver": "610.57.04",
+    "host_ram_gib": 30,
+    "cpu_threads": 16,
+    "os": "Arch Linux",
+    "runtime": "podman 6.1.0, CDI nvidia.com/gpu=all"
+  },
+  "software": {
+    "image": "docker.io/vllm/vllm-openai:v0.28.0",
+    "vllm": "0.28.0",
+    "torch": "2.13.0+cu130",
+    "transformers": "5.15.1"
+  },
+  "method": {
+    "workload": "single request, 300 max_tokens, thinking disabled, empty KV cache",
+    "prompt": "Write a short paragraph about the sea.",
+    "warmup": "first sample after startup discarded as cold; reported value is the median of the samples that follow",
+    "kv_tokens": "GPU KV cache size as reported by vLLM at startup",
+    "acceptance": "vllm:spec_decode_num_accepted_tokens_total / vllm:spec_decode_num_draft_tokens_total"
+  },
+  "runs": [
+    {
+      "id": "qwen36-moe-default",
+      "status": "ok",
+      "profile": "qwen3.6-35b-a3b",
+      "model": "Qwen3.6-35B-A3B",
+      "checkpoint": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+      "shape": "MoE, 35B total / 3B active",
+      "precision": "NVFP4",
+      "weights_gb": 23.5,
+      "max_model_len": 65536,
+      "kv_tokens": 380817,
+      "max_concurrency": 5.81,
+      "vision": true,
+      "cuda_graphs": true,
+      "spec_decode": false,
+      "decode_tok_s": 236.3,
+      "decode_samples": [
+        236.3,
+        234.0,
+        237.8
+      ],
+      "decode_cold_sample": 153.0
+    },
+    {
+      "id": "qwen36-moe-mtp",
+      "status": "ok",
+      "profile": "qwen3.6-35b-a3b",
+      "model": "Qwen3.6-35B-A3B",
+      "checkpoint": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+      "shape": "MoE, 35B total / 3B active",
+      "precision": "NVFP4",
+      "weights_gb": 23.5,
+      "max_model_len": 65536,
+      "kv_tokens": 135084,
+      "max_concurrency": 2.06,
+      "vision": true,
+      "cuda_graphs": true,
+      "spec_decode": true,
+      "spec_config": "{\"method\":\"mtp\",\"num_speculative_tokens\":4,\"moe_backend\":\"flashinfer_cutlass\"}",
+      "spec_acceptance": 0.405,
+      "decode_tok_s": 296.3,
+      "decode_samples": [
+        336.8,
+        296.3,
+        276.4
+      ],
+      "decode_cold_sample": 110.1,
+      "overrides": "SPEC_DECODE=1"
+    },
+    {
+      "id": "qwen38-dense-mtp",
+      "status": "ok",
+      "profile": "qwen3.8-27b",
+      "model": "Qwen3.8-27B",
+      "checkpoint": "Inferact/Qwen3.8-27B-NVFP4",
+      "shape": "dense 27B",
+      "precision": "NVFP4",
+      "weights_gb": 24.6,
+      "max_model_len": 32768,
+      "kv_tokens": 70087,
+      "max_concurrency": 2.14,
+      "vision": false,
+      "cuda_graphs": false,
+      "spec_decode": true,
+      "spec_config": "{\"method\":\"mtp\",\"num_speculative_tokens\":3}",
+      "spec_acceptance": 0.482,
+      "decode_tok_s": 50.1,
+      "decode_samples": [
+        51.6,
+        48.6
+      ],
+      "decode_cold_sample": 13.8,
+      "overrides": "SPEC_DECODE=1 LANGUAGE_MODEL_ONLY=1"
+    },
+    {
+      "id": "qwen38-fp8-official",
+      "status": "ok",
+      "profile": "qwen3.8-27b",
+      "model": "Qwen3.8-27B",
+      "checkpoint": "Qwen/Qwen3.8-27B-FP8",
+      "shape": "dense 27B",
+      "precision": "FP8 (official)",
+      "weights_gb": 30.9,
+      "max_model_len": 4096,
+      "kv_tokens": 9557,
+      "max_concurrency": 2.33,
+      "vision": false,
+      "cuda_graphs": false,
+      "spec_decode": false,
+      "decode_tok_s": 37.5,
+      "decode_samples": [
+        37.5
+      ],
+      "overrides": "MAX_MODEL_LEN=4096 MAX_NUM_SEQS=2 GPU_MEMORY_UTILIZATION=0.93 LANGUAGE_MODEL_ONLY=1 EXTRA_ARGS='--max-num-batched-tokens 1024'",
+      "note": "Fits only in this cramped envelope. Usable, but not competitive with NVFP4."
+    },
+    {
+      "id": "qwen38-dense-default",
+      "status": "ok",
+      "profile": "qwen3.8-27b",
+      "model": "Qwen3.8-27B",
+      "checkpoint": "Inferact/Qwen3.8-27B-NVFP4",
+      "shape": "dense 27B",
+      "precision": "NVFP4",
+      "weights_gb": 24.6,
+      "max_model_len": 32768,
+      "kv_tokens": 60681,
+      "max_concurrency": 1.85,
+      "vision": true,
+      "cuda_graphs": false,
+      "spec_decode": false,
+      "decode_tok_s": 24.6,
+      "decode_samples": [
+        24.1,
+        24.6,
+        24.6
+      ],
+      "decode_cold_sample": 14.0
+    }
+  ],
+  "failures": [
+    {
+      "id": "qwen38-bf16",
+      "checkpoint": "Qwen/Qwen3.8-27B",
+      "precision": "BF16 (official)",
+      "weights_gb": 55.6,
+      "status": "not_attempted",
+      "reason": "55.6 GB of weights against 31.4 GiB of VRAM and 30 GiB of host RAM. Roughly 24 GB would have to be CPU-offloaded onto a host that cannot hold it either."
+    },
+    {
+      "id": "qwen38-fp8-8k",
+      "checkpoint": "Qwen/Qwen3.8-27B-FP8",
+      "precision": "FP8 (official)",
+      "status": "oom_at_first_request",
+      "config": "MAX_MODEL_LEN=8192 MAX_NUM_SEQS=4 GPU_MEMORY_UTILIZATION=0.95 LANGUAGE_MODEL_ONLY=1",
+      "reason": "Profiles fine, reports a 21,845-token KV pool, prints 'Application startup complete', then dies on the first real request: 'Tried to allocate 394.00 MiB. GPU 0 has a total capacity of 31.39 GiB of which 151.75 MiB is free.' Memory profiling underestimates the true activation peak when weights occupy 91% of the card."
+    },
+    {
+      "id": "qwen38-mtp-with-vision",
+      "checkpoint": "Inferact/Qwen3.8-27B-NVFP4",
+      "precision": "NVFP4",
+      "status": "oom_at_startup",
+      "config": "SPEC_DECODE=1 with the vision tower loaded",
+      "reason": "Needs exactly 2.37 GiB = 248,320 x 5,120 in BF16. vllm/model_executor/models/qwen3_5_mtp.py gives the draft head its own VocabParallelEmbedding even though the checkpoint sets mtp_use_dedicated_embeddings: false. Lowering GPU_MEMORY_UTILIZATION does not help: the allocation happens after profiling, outside the budget."
+    }
+  ],
+  "sweeps": [
+    {
+      "label": "qwen3.6-35b-a3b baseline",
+      "model": "Qwen3.6-35B-A3B",
+      "base_url": "http://127.0.0.1:8000",
+      "generated": "2026-09-06",
+      "vllm_version": "0.28.0",
+      "max_model_len": 65536,
+      "workload": {
+        "prompt_words": 700,
+        "output_tokens": 256,
+        "rounds": 2,
+        "ignore_eos": true,
+        "thinking": false
+      },
+      "levels": [
+        {
+          "concurrency": 1,
+          "requests": 2,
+          "succeeded": 2,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 786,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.0669,
+          "ttft_p95_s": 0.0679,
+          "decode_tok_s_per_stream": 280.1,
+          "total_tok_s": 261.9,
+          "latency_p50_s": 0.977,
+          "latency_p95_s": 0.979
+        },
+        {
+          "concurrency": 2,
+          "requests": 4,
+          "succeeded": 4,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 786,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.1313,
+          "ttft_p95_s": 0.1321,
+          "decode_tok_s_per_stream": 215.4,
+          "total_tok_s": 388.7,
+          "latency_p50_s": 1.315,
+          "latency_p95_s": 1.319
+        },
+        {
+          "concurrency": 4,
+          "requests": 8,
+          "succeeded": 8,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 786,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.1404,
+          "ttft_p95_s": 0.142,
+          "decode_tok_s_per_stream": 206.9,
+          "total_tok_s": 746.4,
+          "latency_p50_s": 1.369,
+          "latency_p95_s": 1.376
+        },
+        {
+          "concurrency": 8,
+          "requests": 16,
+          "succeeded": 16,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 787,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.2253,
+          "ttft_p95_s": 0.2279,
+          "decode_tok_s_per_stream": 173.9,
+          "total_tok_s": 1223.0,
+          "latency_p50_s": 1.67,
+          "latency_p95_s": 1.691
+        },
+        {
+          "concurrency": 16,
+          "requests": 32,
+          "succeeded": 32,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 787,
+          "output_tokens": 256,
+          "ttft_p50_s": 1.0163,
+          "ttft_p95_s": 1.9177,
+          "decode_tok_s_per_stream": 169.2,
+          "total_tok_s": 1210.9,
+          "latency_p50_s": 2.558,
+          "latency_p95_s": 3.402
+        }
+      ],
+      "notes": "profiles/qwen3.6-35b-a3b.env unchanged; no MTP"
+    },
+    {
+      "label": "qwen3.6-35b-a3b max-num-seqs 32",
+      "model": "Qwen3.6-35B-A3B",
+      "base_url": "http://127.0.0.1:8000",
+      "generated": "2026-09-06",
+      "vllm_version": "0.28.0",
+      "max_model_len": 65536,
+      "workload": {
+        "prompt_words": 700,
+        "output_tokens": 256,
+        "rounds": 2,
+        "ignore_eos": true,
+        "thinking": false
+      },
+      "levels": [
+        {
+          "concurrency": 1,
+          "requests": 2,
+          "succeeded": 2,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 786,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.0673,
+          "ttft_p95_s": 0.0684,
+          "decode_tok_s_per_stream": 276.6,
+          "total_tok_s": 258.7,
+          "latency_p50_s": 0.989,
+          "latency_p95_s": 0.991
+        },
+        {
+          "concurrency": 2,
+          "requests": 4,
+          "succeeded": 4,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 786,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.1643,
+          "ttft_p95_s": 0.1996,
+          "decode_tok_s_per_stream": 213.4,
+          "total_tok_s": 376.0,
+          "latency_p50_s": 1.359,
+          "latency_p95_s": 1.397
+        },
+        {
+          "concurrency": 4,
+          "requests": 8,
+          "succeeded": 8,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 786,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.2073,
+          "ttft_p95_s": 0.208,
+          "decode_tok_s_per_stream": 205.8,
+          "total_tok_s": 708.5,
+          "latency_p50_s": 1.442,
+          "latency_p95_s": 1.449
+        },
+        {
+          "concurrency": 8,
+          "requests": 16,
+          "succeeded": 16,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 787,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.227,
+          "ttft_p95_s": 0.2844,
+          "decode_tok_s_per_stream": 172.0,
+          "total_tok_s": 1179.5,
+          "latency_p50_s": 1.732,
+          "latency_p95_s": 1.76
+        },
+        {
+          "concurrency": 16,
+          "requests": 32,
+          "succeeded": 32,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 787,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.4016,
+          "ttft_p95_s": 0.4864,
+          "decode_tok_s_per_stream": 140.9,
+          "total_tok_s": 1860.8,
+          "latency_p50_s": 2.194,
+          "latency_p95_s": 2.245
+        },
+        {
+          "concurrency": 32,
+          "requests": 64,
+          "succeeded": 64,
+          "failed": 0,
+          "status": "ok",
+          "prompt_tokens": 787,
+          "output_tokens": 256,
+          "ttft_p50_s": 0.6586,
+          "ttft_p95_s": 0.8837,
+          "decode_tok_s_per_stream": 100.1,
+          "total_tok_s": 2546.4,
+          "latency_p50_s": 3.2,
+          "latency_p95_s": 3.228
+        }
+      ],
+      "notes": "profiles/qwen3.6-35b-a3b.env with MAX_NUM_SEQS=32; no MTP. KV pool 370,189 tokens."
+    }
+  ]
+}

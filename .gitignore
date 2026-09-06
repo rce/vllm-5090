@@ -1,0 +1,6 @@
+# Debug harness written by the screenshot workflow; never committed.
+docs/_debug.html
+
+__pycache__/
+*.pyc
+*.log
