@@ -165,11 +165,24 @@ a 374-token prompt was hit and several 22–44-token prompts were not.
 Consistent with the damage being tied to a request's row offset in the
 batch buffer, not to the request itself.
 
+Two attempts to make it go away, both at concurrency 4 against the same
+root capture:
+
+| server | mean KLD | top-1 | ppl | prompts damaged (≤47 / 48–63 / ≥64 tokens) |
+| --- | ---: | ---: | ---: | --- |
+| MTP, `--async-scheduling` removed | 2.19 [1.60–2.81] | 78.2% | 11.8 | 28/37 · 5/22 · 0/37 |
+| + `disable_padded_drafter_batch: true` | — | — | — | engine dies on the first request |
+
+Async scheduling is not the cause: without it the same length-banded
+signature is there (generation side still at the floor, prefix KLD 2.4e-3).
 `disable_padded_drafter_batch=True` refuses to start alongside
 `--async-scheduling` ("Async scheduling is not compatible with
-disable_padded_drafter_batch=True"). Whether dropping async scheduling
-(with or without the padded-drafter change) makes the artefact go away is being
-measured; result to follow.
+disable_padded_drafter_batch=True"), and with async off it starts but the
+engine asserts on the first request in vLLM 0.28.0
+(`llm_base_proposer.prepare_inputs`: `assert
+common_attn_metadata.seq_lens_cpu_upper_bound is not None`). So the one flag
+that targets the suspected mechanism cannot be tested on this version. Left
+there.
 
 Recorded on the results page with `compare --suspect`, which keeps the row in
 the table and leaves it off the chart. The general lesson is in
