@@ -136,14 +136,17 @@
     position: relative; height: 24px;
     display: flex; align-items: center; gap: 9px;
     border-left: 1px solid var(--baseline);
-    padding-left: 0;
+    /* Room for the value label, so a bar at full scale never pushes its
+       number past the card edge on a narrow screen. The axis reserves the
+       same width so its ticks stay under the bars. */
+    padding: 0 68px 0 0;
     cursor: default;
   }
   .bar { height: 24px; border-radius: 0 4px 4px 0; min-width: 2px; transition: filter .12s; }
   .track:hover .bar, .track:focus-visible .bar { filter: brightness(1.12); }
   .track:focus-visible { outline: 2px solid var(--text-muted); outline-offset: 3px; border-radius: 3px; }
   .val { font-size: 12.5px; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .axis { margin-top: 12px; padding-left: 0; color: var(--text-muted); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+  .axis { margin-top: 12px; padding: 0 68px 0 0; color: var(--text-muted); font-size: 11.5px; font-variant-numeric: tabular-nums; }
   .axis .inner { display: flex; justify-content: space-between; }
   .axis-title { margin-top: 8px; color: var(--text-muted); font-size: 11.5px; }
 
@@ -208,6 +211,9 @@
     .legend { gap: 10px 16px; flex-wrap: wrap; }
     .dimbar { gap: 10px 14px; }
   }
+  .bar.floor { background-image: repeating-linear-gradient(135deg, transparent 0 4px, rgba(255,255,255,.55) 4px 6px); }
+  .row .name .sm, td .sm { display: block; color: var(--text-muted); font-size: 11px; }
+  td .sm.suspect { color: var(--text-secondary); max-width: 34ch; white-space: normal; }
   .note-inline { color: var(--text-muted); font-size: 11.5px; margin: -8px 0 16px; }
 
   /* Failures */
@@ -257,11 +263,9 @@
       </div>
     </div>
 
-    <div class="filters" role="group" aria-label="Filter by model">
+    <div class="filters" role="group" aria-label="Filter by model" id="modelFilters">
       <span class="lab">Model</span>
       <button class="chip" data-filter="all" aria-pressed="true">All</button>
-      <button class="chip" data-filter="Qwen3.6-35B-A3B" aria-pressed="false">Qwen3.6-35B-A3B</button>
-      <button class="chip" data-filter="Qwen3.8-27B" aria-pressed="false">Qwen3.8-27B</button>
     </div>
 
     <div class="card">
@@ -348,6 +352,60 @@
             </tr>
           </thead>
           <tbody id="sweepBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="divSection" hidden>
+      <h2>Did the flag change the model?</h2>
+      <p class="sub">Two configurations of the same model are fed the same fixed text and
+        asked, at every token, what they thought was coming next. The further apart those
+        predictions, the more the flag changed the model rather than its speed. Produced by
+        <code>quality.py</code>; <a href="divergence.md">what these numbers mean</a>.</p>
+      <p class="note-inline">Read every row against the noise floor for its model — the same
+        server disagreeing with itself. At or below the floor means indistinguishable from
+        running the reference twice.</p>
+
+      <h3 style="font-size:13px;margin:22px 0 2px">Mean KL divergence, teacher-forced</h3>
+      <p class="sub">Lower is closer to the reference. Hatched bars are noise floors.</p>
+      <div class="chart" id="chartKld"></div>
+      <div class="axis"><div class="inner" id="axisKld"></div></div>
+
+      <h3 style="font-size:13px;margin:26px 0 10px">Every comparison</h3>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Comparison</th>
+              <th scope="col">KLD mean</th>
+              <th scope="col">95% CI</th>
+              <th scope="col">KLD p99</th>
+              <th scope="col">Top-1 agree</th>
+              <th scope="col">Δp p5 / p95</th>
+              <th scope="col">Identical gens</th>
+              <th scope="col">First split p50</th>
+            </tr>
+          </thead>
+          <tbody id="divBody"></tbody>
+        </table>
+      </div>
+
+      <h3 style="font-size:13px;margin:26px 0 10px">Noise floor per configuration</h3>
+      <p class="sub">The same scoring request sent repeatedly to one server. Nothing changed
+        between requests; this is how much the server moves on its own.</p>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Configuration</th>
+              <th scope="col">Positions</th>
+              <th scope="col">KLD mean</th>
+              <th scope="col">KLD p99</th>
+              <th scope="col">KLD max</th>
+              <th scope="col">Top-1 flips</th>
+            </tr>
+          </thead>
+          <tbody id="jitterBody"></tbody>
         </table>
       </div>
     </div>
@@ -441,17 +499,17 @@
 
   // --- tooltip ------------------------------------------------------------
   const tip = $('tip');
-  function showTip(ev, run, valueText, metaText) {
+  function showTip(ev, run, valueText, metaText, title) {
     tip.innerHTML = '';
     const v = document.createElement('div');
     v.className = 't-val';
     const key = document.createElement('span');
     key.className = 'key';
-    key.style.background = COLOR[run.model];
+    key.style.background = COLOR[run.model] || 'var(--series-3)';
     v.append(key, document.createTextNode(valueText));
     const n = document.createElement('div');
     n.className = 't-name';
-    n.textContent = shortName(run);
+    n.textContent = title || shortName(run);
     const m = document.createElement('div');
     m.className = 't-meta';
     m.textContent = metaText;
@@ -872,6 +930,145 @@
     }
   }
 
+
+  // --- divergence ---------------------------------------------------------
+  // Comparisons and noise floors share one chart so a bar can be read against
+  // its floor. Colour follows the model, the same slots as the bar charts above;
+  // floors carry a hatch on top so they are never colour-alone.
+  const divs = data.divergence || [];
+  const jit = data.jitter || [];
+  const modelColor = (m) => COLOR[m] || 'var(--series-3)';
+  const sci = (v) => v == null ? '—' : v === 0 ? '0' : (v >= 0.01 ? v.toFixed(3) : v.toExponential(1));
+
+  function renderDivergence(filter) {
+    const section = $('divSection');
+    const list = divs.filter(d => filter === 'all' || d.model === filter);
+    const floors = jit.filter(j => filter === 'all' || j.model === filter);
+    if (!divs.length && !jit.length) { section.hidden = true; return; }
+    section.hidden = false;
+
+    const host = $('chartKld'), axisHost = $('axisKld');
+    host.innerHTML = ''; axisHost.innerHTML = '';
+    const bars = [
+      ...floors.map(j => ({ name: j.label, sub: 'noise floor · ' + j.model, v: j.kld_mean,
+                            model: j.model, floor: true,
+                            meta: `${fmt(j.positions)} positions · p99 ${sci(j.kld_p99)} · top-1 flips ${(j.top1_flip_rate * 100).toFixed(2)}%` })),
+      ...list.filter(d => !d.suspect).map(d => ({ name: d.label, sub: d.model, v: d.teacher_forced.kld_mean,
+                          model: d.model,
+                          // A full second capture on the same server is a floor too,
+                          // and the more relevant one: it ran at capture concurrency.
+                          floor: !!(d.dimensions && d.dimensions.kind === 'floor'),
+                          meta: `${fmt(d.teacher_forced.positions)} positions · p99 ${sci(d.teacher_forced.kld_p99)} · top-1 agree ${(d.teacher_forced.top1_agree * 100).toFixed(2)}%` })),
+    ].filter(b => b.v != null);
+    // Group by model, floors first within each, so a bar sits next to the
+    // floor it has to be read against.
+    const order = allModels.indexOf.bind(allModels);
+    bars.sort((a, b) => order(a.model) - order(b.model) || (b.floor - a.floor));
+    if (bars.length) {
+      const max = Math.max(...bars.map(b => b.v));
+      const mag = Math.pow(10, Math.floor(Math.log10(max)));
+      const top2 = Math.ceil(max / (mag / 2)) * (mag / 2);
+      for (const b of bars) {
+        const row = document.createElement('div');
+        row.className = 'row';
+        const name = document.createElement('div');
+        name.className = 'name';
+        name.textContent = b.name;
+        const sm = document.createElement('span');
+        sm.className = 'sm';
+        sm.textContent = b.sub;
+        name.appendChild(sm);
+        const track = document.createElement('div');
+        track.className = 'track';
+        track.tabIndex = 0;
+        const bar = document.createElement('div');
+        bar.className = 'bar' + (b.floor ? ' floor' : '');
+        bar.style.width = Math.max(0.4, (b.v / top2) * 100) + '%';
+        bar.style.backgroundColor = modelColor(b.model);
+        const val = document.createElement('span');
+        val.className = 'val';
+        val.textContent = sci(b.v);
+        track.append(bar, val);
+        const fake = { model: b.model }, txt = 'mean KLD ' + sci(b.v);
+        track.addEventListener('pointerenter', (e) => showTip(e, fake, txt, b.meta, b.name));
+        track.addEventListener('pointermove', moveTip);
+        track.addEventListener('pointerleave', hideTip);
+        track.addEventListener('focus', () => {
+          const r = track.getBoundingClientRect();
+          showTip({ clientX: r.left + 40, clientY: r.top }, fake, txt, b.meta, b.name);
+        });
+        track.addEventListener('blur', hideTip);
+        track.setAttribute('aria-label', b.name + ': ' + txt);
+        row.append(name, track);
+        host.appendChild(row);
+      }
+      for (const t of [0, top2 / 2, top2]) {
+        const sp = document.createElement('span');
+        sp.textContent = t === 0 ? '0' : sci(t);
+        axisHost.appendChild(sp);
+      }
+      const cols = getComputedStyle(host.querySelector('.row')).gridTemplateColumns.split(' ');
+      axisHost.parentElement.style.marginLeft = cols.length > 1 ? cols[0] : '0px';
+    }
+
+    const tb = $('divBody');
+    tb.innerHTML = '';
+    for (const d of list) {
+      const t = d.teacher_forced, g = d.generation;
+      const tr = document.createElement('tr');
+      const first = document.createElement('td');
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.style.background = modelColor(d.model);
+      first.append(dot, document.createTextNode(d.label));
+      const sub = document.createElement('span');
+      sub.className = 'sm';
+      sub.textContent = d.a + ' → ' + d.b;
+      first.appendChild(sub);
+      if (d.suspect) {
+        const warn = document.createElement('span');
+        warn.className = 'sm suspect';
+        warn.textContent = '⚠ not charted: ' + d.suspect;
+        first.appendChild(warn);
+      }
+      tr.appendChild(first);
+      const cells = [
+        sci(t.kld_mean),
+        t.kld_mean_ci95 ? sci(t.kld_mean_ci95[0]) + ' – ' + sci(t.kld_mean_ci95[1]) : '—',
+        sci(t.kld_p99),
+        (t.top1_agree * 100).toFixed(2) + '%',
+        (t.dp_p5 >= 0 ? '+' : '') + t.dp_p5.toFixed(3) + ' / +' + t.dp_p95.toFixed(3),
+        g ? g.identical + '/' + g.prompts : '—',
+        g && g.first_divergence_p50 != null ? Math.round(g.first_divergence_p50) : (g ? 'never' : '—'),
+      ];
+      for (const c of cells) {
+        const td = document.createElement('td');
+        td.textContent = c;
+        tr.appendChild(td);
+      }
+      tb.appendChild(tr);
+    }
+
+    const jb = $('jitterBody');
+    jb.innerHTML = '';
+    for (const j of floors) {
+      const tr = document.createElement('tr');
+      const first = document.createElement('td');
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.style.background = modelColor(j.model);
+      first.append(dot, document.createTextNode(j.label));
+      tr.appendChild(first);
+      for (const c of [fmt(j.positions), sci(j.kld_mean), sci(j.kld_p99), sci(j.kld_max),
+                       (j.top1_flip_rate * 100).toFixed(2) + '%']) {
+        const td = document.createElement('td');
+        td.textContent = c;
+        tr.appendChild(td);
+      }
+      jb.appendChild(tr);
+    }
+  }
+
   // --- render + filter ----------------------------------------------------
   function render(filter) {
     const list = filter === 'all' ? runs : runs.filter(r => r.model === filter);
@@ -886,6 +1083,25 @@
       r => r.max_concurrency.toFixed(2) + '× concurrency at ' + fmt(r.max_model_len) + ' ctx');
     drawTable(list);
     renderSweeps(filter);
+    renderDivergence(filter);
+  }
+
+  // Model chips come from every section's data, so a model that only has a
+  // sweep (or only a divergence entry) still gets a filter.
+  const allModels = [...new Set([
+    ...runs.map(r => r.model),
+    ...sweeps.map(s => s.model),
+    ...(data.divergence || []).map(d => d.model),
+    ...(data.jitter || []).map(j => j.model),
+  ].filter(Boolean))];
+  for (const m of allModels) {
+    const b = document.createElement('button');
+    b.className = 'chip';
+    b.type = 'button';
+    b.dataset.filter = m;
+    b.setAttribute('aria-pressed', 'false');
+    b.textContent = m;
+    $('modelFilters').appendChild(b);
   }
 
   let currentModelFilter = 'all';

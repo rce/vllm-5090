@@ -1687,5 +1687,1516 @@
         "mtp": "off"
       }
     }
+  ],
+  "jitter": [
+    {
+      "label": "Qwen3.6-35B-A3B, bf16 KV",
+      "model": "Qwen3.6-35B-A3B",
+      "vllm_version": "0.28.0",
+      "generated": "2026-09-06",
+      "prompts": 8,
+      "repeats": 4,
+      "positions": 3072,
+      "max_tokens": 128,
+      "top_k": 20,
+      "thinking": true,
+      "kld_mean": 0.002291,
+      "kld_p50": 8e-06,
+      "kld_p99": 0.039499,
+      "kld_max": 0.148018,
+      "top1_flip_rate": 0.01009,
+      "notes": "profile default with KV_CACHE_DTYPE=auto; the root reference for the Qwen3.6 comparisons"
+    },
+    {
+      "label": "Qwen3.6-35B-A3B, fp8 KV (profile default)",
+      "model": "Qwen3.6-35B-A3B",
+      "vllm_version": "0.28.0",
+      "generated": "2026-09-06",
+      "prompts": 8,
+      "repeats": 4,
+      "positions": 3072,
+      "max_tokens": 128,
+      "top_k": 20,
+      "thinking": true,
+      "kld_mean": 0.002388,
+      "kld_p50": 8e-06,
+      "kld_p99": 0.044859,
+      "kld_max": 0.121335,
+      "top1_flip_rate": 0.00749
+    },
+    {
+      "label": "Qwen3.8-27B, official FP8, bf16 KV",
+      "model": "Qwen3.8-27B",
+      "vllm_version": "0.28.0",
+      "generated": "2026-09-06",
+      "prompts": 8,
+      "repeats": 4,
+      "positions": 3072,
+      "max_tokens": 128,
+      "top_k": 20,
+      "thinking": true,
+      "kld_mean": 0.0,
+      "kld_p50": 0.0,
+      "kld_p99": 0.0,
+      "kld_max": 0.0,
+      "top1_flip_rate": 0.0,
+      "notes": "Qwen/Qwen3.8-27B-FP8, text-only, 4K ctx; the root reference for the Qwen3.8 comparisons"
+    },
+    {
+      "label": "Qwen3.8-27B, NVFP4, bf16 KV",
+      "model": "Qwen3.8-27B",
+      "vllm_version": "0.28.0",
+      "generated": "2026-09-06",
+      "prompts": 8,
+      "repeats": 4,
+      "positions": 3072,
+      "max_tokens": 128,
+      "top_k": 20,
+      "thinking": true,
+      "kld_mean": 0.0,
+      "kld_p50": 0.0,
+      "kld_p99": 0.0,
+      "kld_max": 0.0,
+      "top1_flip_rate": 0.0
+    },
+    {
+      "label": "Nemotron 3.5 Lightning, fp8 KV (profile default)",
+      "model": "Nemotron-3.5-Lightning-30B-A3B",
+      "vllm_version": "0.28.0",
+      "generated": "2026-09-06",
+      "prompts": 8,
+      "repeats": 4,
+      "positions": 3072,
+      "max_tokens": 128,
+      "top_k": 20,
+      "thinking": true,
+      "kld_mean": 0.008675,
+      "kld_p50": 1e-06,
+      "kld_p99": 0.185469,
+      "kld_max": 1.152156,
+      "top1_flip_rate": 0.01335
+    }
+  ],
+  "divergence": [
+    {
+      "label": "Qwen3.6 bf16 KV \u2192 same server again",
+      "a": "q36-root",
+      "b": "q36-root-rerun",
+      "model": "Qwen3.6-35B-A3B",
+      "generated": "2026-09-06",
+      "vllm_version": "0.28.0",
+      "prompt_set": "quality/prompts.jsonl",
+      "settings": {
+        "max_tokens": 256,
+        "top_k": 20,
+        "thinking": true,
+        "temperature": 0,
+        "seed": 0,
+        "concurrency": 4
+      },
+      "teacher_forced": {
+        "positions": 24576,
+        "kld_mean": 0.004159,
+        "kld_p50": 2e-05,
+        "kld_p90": 0.011055,
+        "kld_p99": 0.058235,
+        "kld_p999": 0.171327,
+        "kld_max": 1.702063,
+        "top1_agree": 0.98612,
+        "dp_mean_abs": 0.011923,
+        "dp_p1": -0.10571,
+        "dp_p5": -0.04237,
+        "dp_p50": 0.0,
+        "dp_p95": 0.04103,
+        "dp_p99": 0.10541,
+        "support_mass_mean": 0.998,
+        "ppl_a": 1.1268,
+        "ppl_b": 1.1272,
+        "prompts": 96,
+        "kld_mean_ci95": [
+          0.003735,
+          0.004601
+        ],
+        "per_category": {
+          "agentic": {
+            "positions": 1536,
+            "kld_mean": 0.003105,
+            "top1_agree": 0.99414,
+            "dp_mean_abs": 0.00895
+          },
+          "code-other": {
+            "positions": 2560,
+            "kld_mean": 0.003919,
+            "top1_agree": 0.98594,
+            "dp_mean_abs": 0.012434
+          },
+          "code-py": {
+            "positions": 3072,
+            "kld_mean": 0.003477,
+            "top1_agree": 0.99186,
+            "dp_mean_abs": 0.00999
+          },
+          "finnish": {
+            "positions": 2048,
+            "kld_mean": 0.005261,
+            "top1_agree": 0.97803,
+            "dp_mean_abs": 0.01497
+          },
+          "instruction": {
+            "positions": 2560,
+            "kld_mean": 0.004866,
+            "top1_agree": 0.98555,
+            "dp_mean_abs": 0.012257
+          },
+          "math": {
+            "positions": 3072,
+            "kld_mean": 0.002222,
+            "top1_agree": 0.99154,
+            "dp_mean_abs": 0.008169
+          },
+          "multilingual": {
+            "positions": 1024,
+            "kld_mean": 0.005367,
+            "top1_agree": 0.98047,
+            "dp_mean_abs": 0.016688
+          },
+          "reasoning": {
+            "positions": 2048,
+            "kld_mean": 0.003757,
+            "top1_agree": 0.98926,
+            "dp_mean_abs": 0.011121
+          },
+          "structured": {
+            "positions": 2560,
+            "kld_mean": 0.003793,
+            "top1_agree": 0.98828,
+            "dp_mean_abs": 0.010639
+          },
+          "summarise": {
+            "positions": 2048,
+            "kld_mean": 0.005997,
+            "top1_agree": 0.97852,
+            "dp_mean_abs": 0.016109
+          },
+          "writing": {
+            "positions": 2048,
+            "kld_mean": 0.005613,
+            "top1_agree": 0.97705,
+            "dp_mean_abs": 0.01442
+          }
+        }
+      },
+      "generation": {
+        "positions": 8779,
+        "kld_mean": 0.0025,
+        "kld_p50": 9e-06,
+        "kld_p90": 0.006135,
+        "kld_p99": 0.043219,
+        "kld_p999": 0.11566,
+        "kld_max": 0.225399,
+        "top1_agree": 1.0,
+        "dp_mean_abs": 0.007962,
+        "dp_p1": -0.08579,
+        "dp_p5": -0.02556,
+        "dp_p50": 0.0,
+        "dp_p95": 0.02698,
+        "dp_p99": 0.08698,
+        "support_mass_mean": 0.99899,
+        "ppl_a": 1.0752,
+        "ppl_b": 1.0749,
+        "prompts": 96,
+        "identical": 3,
+        "identical_rate": 0.0312,
+        "diverged": 93,
+        "first_divergence_p10": 16.4,
+        "first_divergence_p50": 72.0,
+        "first_divergence_min": 0,
+        "gen_tokens_a": 24576,
+        "gen_tokens_b": 24576
+      },
+      "dimensions": {
+        "model": "Qwen3.6-35B-A3B",
+        "kind": "floor"
+      },
+      "notes": "run-to-run floor at full prompt-set scale"
+    },
+    {
+      "label": "Qwen3.6 bf16 KV \u2192 fp8 KV",
+      "a": "q36-root",
+      "b": "q36-kvfp8",
+      "model": "Qwen3.6-35B-A3B",
+      "generated": "2026-09-06",
+      "vllm_version": "0.28.0",
+      "prompt_set": "quality/prompts.jsonl",
+      "settings": {
+        "max_tokens": 256,
+        "top_k": 20,
+        "thinking": true,
+        "temperature": 0,
+        "seed": 0,
+        "concurrency": 4
+      },
+      "teacher_forced": {
+        "positions": 24576,
+        "kld_mean": 0.004865,
+        "kld_p50": 2.1e-05,
+        "kld_p90": 0.013553,
+        "kld_p99": 0.06941,
+        "kld_p999": 0.188693,
+        "kld_max": 0.786505,
+        "top1_agree": 0.98604,
+        "dp_mean_abs": 0.012972,
+        "dp_p1": -0.11689,
+        "dp_p5": -0.0464,
+        "dp_p50": 0.0,
+        "dp_p95": 0.04624,
+        "dp_p99": 0.11685,
+        "support_mass_mean": 0.99799,
+        "ppl_a": 1.1268,
+        "ppl_b": 1.1269,
+        "prompts": 96,
+        "kld_mean_ci95": [
+          0.004338,
+          0.005378
+        ],
+        "per_category": {
+          "agentic": {
+            "positions": 1536,
+            "kld_mean": 0.003183,
+            "top1_agree": 0.99349,
+            "dp_mean_abs": 0.008898
+          },
+          "code-other": {
+            "positions": 2560,
+            "kld_mean": 0.005131,
+            "top1_agree": 0.98281,
+            "dp_mean_abs": 0.014447
+          },
+          "code-py": {
+            "positions": 3072,
+            "kld_mean": 0.003898,
+            "top1_agree": 0.99186,
+            "dp_mean_abs": 0.011034
+          },
+          "finnish": {
+            "positions": 2048,
+            "kld_mean": 0.005875,
+            "top1_agree": 0.98389,
+            "dp_mean_abs": 0.016154
+          },
+          "instruction": {
+            "positions": 2560,
+            "kld_mean": 0.005179,
+            "top1_agree": 0.9832,
+            "dp_mean_abs": 0.012437
+          },
+          "math": {
+            "positions": 3072,
+            "kld_mean": 0.002504,
+            "top1_agree": 0.99154,
+            "dp_mean_abs": 0.00858
+          },
+          "multilingual": {
+            "positions": 1024,
+            "kld_mean": 0.006068,
+            "top1_agree": 0.98535,
+            "dp_mean_abs": 0.017153
+          },
+          "reasoning": {
+            "positions": 2048,
+            "kld_mean": 0.004499,
+            "top1_agree": 0.98828,
+            "dp_mean_abs": 0.012328
+          },
+          "structured": {
+            "positions": 2560,
+            "kld_mean": 0.004638,
+            "top1_agree": 0.98828,
+            "dp_mean_abs": 0.011862
+          },
+          "summarise": {
+            "positions": 2048,
+            "kld_mean": 0.006842,
+            "top1_agree": 0.97949,
+            "dp_mean_abs": 0.016768
+          },
+          "writing": {
+            "positions": 2048,
+            "kld_mean": 0.007453,
+            "top1_agree": 0.9751,
+            "dp_mean_abs": 0.01731
+          }
+        }
+      },
+      "generation": {
+        "positions": 9017,
+        "kld_mean": 0.002648,
+        "kld_p50": 8e-06,
+        "kld_p90": 0.005784,
+        "kld_p99": 0.04677,
+        "kld_p999": 0.134141,
+        "kld_max": 0.309301,
+        "top1_agree": 1.0,
+        "dp_mean_abs": 0.007817,
+        "dp_p1": -0.08231,
+        "dp_p5": -0.02495,
+        "dp_p50": 0.0,
+        "dp_p95": 0.0266,
+        "dp_p99": 0.08973,
+        "support_mass_mean": 0.99959,
+        "ppl_a": 1.069,
+        "ppl_b": 1.0681,
+        "prompts": 96,
+        "identical": 6,
+        "identical_rate": 0.0625,
+        "diverged": 90,
+        "first_divergence_p10": 14.0,
+        "first_divergence_p50": 73.5,
+        "first_divergence_min": 0,
+        "gen_tokens_a": 24576,
+        "gen_tokens_b": 24542
+      },
+      "dimensions": {
+        "model": "Qwen3.6-35B-A3B",
+        "kv": "fp8"
+      }
+    },
+    {
+      "label": "Qwen3.6 bf16 KV \u2192 + MTP",
+      "a": "q36-root",
+      "b": "q36-mtp",
+      "model": "Qwen3.6-35B-A3B",
+      "generated": "2026-09-06",
+      "vllm_version": "0.28.0",
+      "prompt_set": "quality/prompts.jsonl",
+      "settings": {
+        "max_tokens": 256,
+        "top_k": 20,
+        "thinking": true,
+        "temperature": 0,
+        "seed": 0,
+        "concurrency": 4
+      },
+      "teacher_forced": {
+        "positions": 24576,
+        "kld_mean": 2.54301,
+        "kld_p50": 0.0005,
+        "kld_p90": 10.298756,
+        "kld_p99": 19.885825,
+        "kld_p999": 23.728873,
+        "kld_max": 29.49199,
+        "top1_agree": 0.74007,
+        "dp_mean_abs": 0.244073,
+        "dp_p1": -1.0,
+        "dp_p5": -0.99994,
+        "dp_p50": -1e-05,
+        "dp_p95": 0.03092,
+        "dp_p99": 0.09965,
+        "support_mass_mean": 0.98475,
+        "ppl_a": 1.1268,
+        "ppl_b": 17.6353,
+        "prompts": 96,
+        "kld_mean_ci95": [
+          1.916554,
+          3.160386
+        ],
+        "per_category": {
+          "agentic": {
+            "positions": 1536,
+            "kld_mean": 0.002616,
+            "top1_agree": 0.99544,
+            "dp_mean_abs": 0.008351
+          },
+          "code-other": {
+            "positions": 2560,
+            "kld_mean": 2.405152,
+            "top1_agree": 0.76797,
+            "dp_mean_abs": 0.207819
+          },
+          "code-py": {
+            "positions": 3072,
+            "kld_mean": 1.023526,
+            "top1_agree": 0.92415,
+            "dp_mean_abs": 0.075187
+          },
+          "finnish": {
+            "positions": 2048,
+            "kld_mean": 2.383726,
+            "top1_agree": 0.76807,
+            "dp_mean_abs": 0.214544
+          },
+          "instruction": {
+            "positions": 2560,
+            "kld_mean": 4.093699,
+            "top1_agree": 0.53164,
+            "dp_mean_abs": 0.446974
+          },
+          "math": {
+            "positions": 3072,
+            "kld_mean": 4.995286,
+            "top1_agree": 0.47526,
+            "dp_mean_abs": 0.51637
+          },
+          "multilingual": {
+            "positions": 1024,
+            "kld_mean": 4.367544,
+            "top1_agree": 0.6748,
+            "dp_mean_abs": 0.298432
+          },
+          "reasoning": {
+            "positions": 2048,
+            "kld_mean": 3.09917,
+            "top1_agree": 0.72266,
+            "dp_mean_abs": 0.267766
+          },
+          "structured": {
+            "positions": 2560,
+            "kld_mean": 0.574564,
+            "top1_agree": 0.94844,
+            "dp_mean_abs": 0.04745
+          },
+          "summarise": {
+            "positions": 2048,
+            "kld_mean": 0.00619,
+            "top1_agree": 0.97852,
+            "dp_mean_abs": 0.016425
+          },
+          "writing": {
+            "positions": 2048,
+            "kld_mean": 4.971311,
+            "top1_agree": 0.41846,
+            "dp_mean_abs": 0.509523
+          }
+        }
+      },
+      "generation": {
+        "positions": 8836,
+        "kld_mean": 0.002475,
+        "kld_p50": 9e-06,
+        "kld_p90": 0.005609,
+        "kld_p99": 0.045015,
+        "kld_p999": 0.111432,
+        "kld_max": 0.417871,
+        "top1_agree": 1.0,
+        "dp_mean_abs": 0.007708,
+        "dp_p1": -0.0774,
+        "dp_p5": -0.02437,
+        "dp_p50": 0.0,
+        "dp_p95": 0.02704,
+        "dp_p99": 0.09248,
+        "support_mass_mean": 0.99957,
+        "ppl_a": 1.0671,
+        "ppl_b": 1.066,
+        "prompts": 96,
+        "identical": 4,
+        "identical_rate": 0.0417,
+        "diverged": 92,
+        "first_divergence_p10": 14.0,
+        "first_divergence_p50": 72.0,
+        "first_divergence_min": 0,
+        "gen_tokens_a": 24576,
+        "gen_tokens_b": 24576
+      },
+      "dimensions": {
+        "model": "Qwen3.6-35B-A3B",
+        "mtp": "on"
+      },
+      "suspect": "prompt_logprobs under MTP returns the draft head's predictions (vLLM 0.28.0); generation side is at the floor"
+    },
+    {
+      "label": "Qwen3.6 bf16 KV \u2192 eager",
+      "a": "q36-root",
+      "b": "q36-eager",
+      "model": "Qwen3.6-35B-A3B",
+      "generated": "2026-09-06",
+      "vllm_version": "0.28.0",
+      "prompt_set": "quality/prompts.jsonl",
+      "settings": {
+        "max_tokens": 256,
+        "top_k": 20,
+        "thinking": true,
+        "temperature": 0,
+        "seed": 0,
+        "concurrency": 4
+      },
+      "teacher_forced": {
+        "positions": 24576,
+        "kld_mean": 0.004447,
+        "kld_p50": 2e-05,
+        "kld_p90": 0.011944,
+        "kld_p99": 0.064486,
+        "kld_p999": 0.174233,
+        "kld_max": 0.74343,
+        "top1_agree": 0.98661,
+        "dp_mean_abs": 0.012243,
+        "dp_p1": -0.11198,
+        "dp_p5": -0.04284,
+        "dp_p50": 0.0,
+        "dp_p95": 0.04379,
+        "dp_p99": 0.1101,
+        "support_mass_mean": 0.99799,
+        "ppl_a": 1.1268,
+        "ppl_b": 1.1267,
+        "prompts": 96,
+        "kld_mean_ci95": [
+          0.003977,
+          0.004926
+        ],
+        "per_category": {
+          "agentic": {
+            "positions": 1536,
+            "kld_mean": 0.002354,
+            "top1_agree": 0.99544,
+            "dp_mean_abs": 0.008149
+          },
+          "code-other": {
+            "positions": 2560,
+            "kld_mean": 0.004683,
+            "top1_agree": 0.9832,
+            "dp_mean_abs": 0.01374
+          },
+          "code-py": {
+            "positions": 3072,
+            "kld_mean": 0.00315,
+            "top1_agree": 0.99284,
+            "dp_mean_abs": 0.009855
+          },
+          "finnish": {
+            "positions": 2048,
+            "kld_mean": 0.005085,
+            "top1_agree": 0.98389,
+            "dp_mean_abs": 0.014643
+          },
+          "instruction": {
+            "positions": 2560,
+            "kld_mean": 0.005204,
+            "top1_agree": 0.98555,
+            "dp_mean_abs": 0.012149
+          },
+          "math": {
+            "positions": 3072,
+            "kld_mean": 0.002496,
+            "top1_agree": 0.99219,
+            "dp_mean_abs": 0.008755
+          },
+          "multilingual": {
+            "positions": 1024,
+            "kld_mean": 0.006908,
+            "top1_agree": 0.97949,
+            "dp_mean_abs": 0.018428
+          },
+          "reasoning": {
+            "positions": 2048,
+            "kld_mean": 0.004482,
+            "top1_agree": 0.98779,
+            "dp_mean_abs": 0.011586
+          },
+          "structured": {
+            "positions": 2560,
+            "kld_mean": 0.00363,
+            "top1_agree": 0.9875,
+            "dp_mean_abs": 0.01037
+          },
+          "summarise": {
+            "positions": 2048,
+            "kld_mean": 0.005978,
+            "top1_agree": 0.98193,
+            "dp_mean_abs": 0.01552
+          },
+          "writing": {
+            "positions": 2048,
+            "kld_mean": 0.00723,
+            "top1_agree": 0.97656,
+            "dp_mean_abs": 0.016604
+          }
+        }
+      },
+      "generation": {
+        "positions": 9083,
+        "kld_mean": 0.00257,
+        "kld_p50": 9e-06,
+        "kld_p90": 0.006585,
+        "kld_p99": 0.041465,
+        "kld_p999": 0.1015,
+        "kld_max": 0.383368,
+        "top1_agree": 1.0,
+        "dp_mean_abs": 0.008181,
+        "dp_p1": -0.07717,
+        "dp_p5": -0.02624,
+        "dp_p50": 0.0,
+        "dp_p95": 0.03029,
+        "dp_p99": 0.09036,
+        "support_mass_mean": 0.999,
+        "ppl_a": 1.0763,
+        "ppl_b": 1.0753,
+        "prompts": 96,
+        "identical": 6,
+        "identical_rate": 0.0625,
+        "diverged": 90,
+        "first_divergence_p10": 18.8,
+        "first_divergence_p50": 70.5,
+        "first_divergence_min": 5,
+        "gen_tokens_a": 24576,
+        "gen_tokens_b": 24576
+      },
+      "dimensions": {
+        "model": "Qwen3.6-35B-A3B",
+        "graphs": "off"
+      }
+    },
+    {
+      "label": "Qwen3.8 FP8 \u2192 same server again",
+      "a": "q38-fp8",
+      "b": "q38-fp8-rerun",
+      "model": "Qwen3.8-27B",
+      "generated": "2026-09-06",
+      "vllm_version": "0.28.0",
+      "prompt_set": "quality/prompts.jsonl",
+      "settings": {
+        "max_tokens": 256,
+        "top_k": 20,
+        "thinking": true,
+        "temperature": 0,
+        "seed": 0,
+        "concurrency": 1
+      },
+      "teacher_forced": {
+        "positions": 23856,
+        "kld_mean": 0.0,
+        "kld_p50": 0.0,
+        "kld_p90": 0.0,
+        "kld_p99": 0.0,
+        "kld_p999": 0.0,
+        "kld_max": 0.0,
+        "top1_agree": 1.0,
+        "dp_mean_abs": 0.0,
+        "dp_p1": 0.0,
+        "dp_p5": 0.0,
+        "dp_p50": 0.0,
+        "dp_p95": 0.0,
+        "dp_p99": 0.0,
+        "support_mass_mean": 0.99328,
+        "ppl_a": 1.2783,
+        "ppl_b": 1.2783,
+        "prompts": 96,
+        "kld_mean_ci95": [
+          0.0,
+          0.0
+        ],
+        "per_category": {
+          "agentic": {
+            "positions": 1536,
+            "kld_mean": 0.0,
+            "top1_agree": 1.0,
+            "dp_mean_abs": 0.0
+          },
+          "code-other": {
+            "positions": 2560,
+            "kld_mean": 0.0,
+            "top1_agree": 1.0,
+            "dp_mean_abs": 0.0
+          },
+          "code-py": {
+            "positions": 3072,
+            "kld_mean": 0.0,
+            "top1_agree": 1.0,
+            "dp_mean_abs": 0.0
+          },
+          "finnish": {
+            "positions": 2048,
+            "kld_mean": 0.0,
+            "top1_agree": 1.0,
+            "dp_mean_abs": 0.0
+          },
+          "instruction": {
+            "positions": 2218,
+            "kld_mean": 0.0,
+            "top1_agree": 1.0,
+            "dp_mean_abs": 0.0
+          },
+          "math": {
+            "positions": 3072,
+            "kld_mean": 0.0,
+            "top1_agree": 1.0,
+            "dp_mean_abs": 0.0
+          },
+          "multilingual": {
+            "positions": 1024,
+            "kld_mean": 0.0,
+            "top1_agree": 1.0,
+            "dp_mean_abs": 0.0
+          },
+          "reasoning": {
+            "positions": 1936,
+            "kld_mean": 0.0,
+            "top1_agree": 1.0,
+            "dp_mean_abs": 0.0
+          },
+          "structured": {
+            "positions": 2379,
+            "kld_mean": 0.0,
+            "top1_agree": 1.0,
+            "dp_mean_abs": 0.0
+          },
+          "summarise": {
+            "positions": 2048,
+            "kld_mean": 0.0,
+            "top1_agree": 1.0,
+            "dp_mean_abs": 0.0
+          },
+          "writing": {
+            "positions": 1963,
+            "kld_mean": 0.0,
+            "top1_agree": 1.0,
+            "dp_mean_abs": 0.0
+          }
+        }
+      },
+      "generation": {
+        "positions": 23856,
+        "kld_mean": 0.0,
+        "kld_p50": 0.0,
+        "kld_p90": 0.0,
+        "kld_p99": 0.0,
+        "kld_p999": 0.0,
+        "kld_max": 0.0,
+        "top1_agree": 1.0,
+        "dp_mean_abs": 0.0,
+        "dp_p1": 0.0,
+        "dp_p5": 0.0,
+        "dp_p50": 0.0,
+        "dp_p95": 0.0,
+        "dp_p99": 0.0,
+        "support_mass_mean": 0.9933,
+        "ppl_a": 1.2754,
+        "ppl_b": 1.2754,
+        "prompts": 96,
+        "identical": 96,
+        "identical_rate": 1.0,
+        "diverged": 0,
+        "first_divergence_p10": null,
+        "first_divergence_p50": null,
+        "first_divergence_min": null,
+        "gen_tokens_a": 23856,
+        "gen_tokens_b": 23856
+      },
+      "dimensions": {
+        "model": "Qwen3.8-27B",
+        "kind": "floor"
+      },
+      "notes": "run-to-run floor at full prompt-set scale"
+    },
+    {
+      "label": "Qwen3.8 FP8 \u2192 NVFP4",
+      "a": "q38-fp8",
+      "b": "q38-nvfp4",
+      "model": "Qwen3.8-27B",
+      "generated": "2026-09-06",
+      "vllm_version": "0.28.0",
+      "prompt_set": "quality/prompts.jsonl",
+      "settings": {
+        "max_tokens": 256,
+        "top_k": 20,
+        "thinking": true,
+        "temperature": 0,
+        "seed": 0,
+        "concurrency": 1
+      },
+      "teacher_forced": {
+        "positions": 23856,
+        "kld_mean": 0.102945,
+        "kld_p50": 0.007728,
+        "kld_p90": 0.298918,
+        "kld_p99": 1.048897,
+        "kld_p999": 2.614167,
+        "kld_max": 7.900331,
+        "top1_agree": 0.89902,
+        "dp_mean_abs": 0.070102,
+        "dp_p1": -0.5094,
+        "dp_p5": -0.29424,
+        "dp_p50": -2e-05,
+        "dp_p95": 0.1338,
+        "dp_p99": 0.29122,
+        "support_mass_mean": 0.98936,
+        "ppl_a": 1.2783,
+        "ppl_b": 1.4257,
+        "prompts": 96,
+        "kld_mean_ci95": [
+          0.094588,
+          0.113446
+        ],
+        "per_category": {
+          "agentic": {
+            "positions": 1536,
+            "kld_mean": 0.131357,
+            "top1_agree": 0.88477,
+            "dp_mean_abs": 0.075865
+          },
+          "code-other": {
+            "positions": 2560,
+            "kld_mean": 0.118687,
+            "top1_agree": 0.88672,
+            "dp_mean_abs": 0.077302
+          },
+          "code-py": {
+            "positions": 3072,
+            "kld_mean": 0.098874,
+            "top1_agree": 0.89779,
+            "dp_mean_abs": 0.070391
+          },
+          "finnish": {
+            "positions": 2048,
+            "kld_mean": 0.119779,
+            "top1_agree": 0.88916,
+            "dp_mean_abs": 0.079286
+          },
+          "instruction": {
+            "positions": 2218,
+            "kld_mean": 0.11175,
+            "top1_agree": 0.91073,
+            "dp_mean_abs": 0.070718
+          },
+          "math": {
+            "positions": 3072,
+            "kld_mean": 0.060169,
+            "top1_agree": 0.93034,
+            "dp_mean_abs": 0.052046
+          },
+          "multilingual": {
+            "positions": 1024,
+            "kld_mean": 0.142805,
+            "top1_agree": 0.87012,
+            "dp_mean_abs": 0.09133
+          },
+          "reasoning": {
+            "positions": 1936,
+            "kld_mean": 0.078374,
+            "top1_agree": 0.90548,
+            "dp_mean_abs": 0.062347
+          },
+          "structured": {
+            "positions": 2379,
+            "kld_mean": 0.088063,
+            "top1_agree": 0.91887,
+            "dp_mean_abs": 0.056893
+          },
+          "summarise": {
+            "positions": 2048,
+            "kld_mean": 0.091472,
+            "top1_agree": 0.90479,
+            "dp_mean_abs": 0.066952
+          },
+          "writing": {
+            "positions": 1963,
+            "kld_mean": 0.13943,
+            "top1_agree": 0.85481,
+            "dp_mean_abs": 0.089595
+          }
+        }
+      },
+      "generation": {
+        "positions": 1858,
+        "kld_mean": 0.030317,
+        "kld_p50": 0.000119,
+        "kld_p90": 0.083416,
+        "kld_p99": 0.531389,
+        "kld_p999": 1.007337,
+        "kld_max": 1.174222,
+        "top1_agree": 1.0,
+        "dp_mean_abs": 0.023981,
+        "dp_p1": -0.29438,
+        "dp_p5": -0.08629,
+        "dp_p50": 0.0,
+        "dp_p95": 0.07304,
+        "dp_p99": 0.22435,
+        "support_mass_mean": 0.99957,
+        "ppl_a": 1.0576,
+        "ppl_b": 1.0614,
+        "prompts": 96,
+        "identical": 0,
+        "identical_rate": 0.0,
+        "diverged": 96,
+        "first_divergence_p10": 2.0,
+        "first_divergence_p50": 8.5,
+        "first_divergence_min": 0,
+        "gen_tokens_a": 23856,
+        "gen_tokens_b": 24199
+      },
+      "dimensions": {
+        "model": "Qwen3.8-27B",
+        "quant": "nvfp4"
+      }
+    },
+    {
+      "label": "Qwen3.8 FP8 \u2192 NVFP4 + fp8 KV",
+      "a": "q38-fp8",
+      "b": "q38-nvfp4-kvfp8",
+      "model": "Qwen3.8-27B",
+      "generated": "2026-09-06",
+      "vllm_version": "0.28.0",
+      "prompt_set": "quality/prompts.jsonl",
+      "settings": {
+        "max_tokens": 256,
+        "top_k": 20,
+        "thinking": true,
+        "temperature": 0,
+        "seed": 0,
+        "concurrency": 1
+      },
+      "teacher_forced": {
+        "positions": 23856,
+        "kld_mean": 0.100724,
+        "kld_p50": 0.007736,
+        "kld_p90": 0.296099,
+        "kld_p99": 1.011475,
+        "kld_p999": 2.320015,
+        "kld_max": 7.198331,
+        "top1_agree": 0.89701,
+        "dp_mean_abs": 0.0693,
+        "dp_p1": -0.49746,
+        "dp_p5": -0.29459,
+        "dp_p50": -3e-05,
+        "dp_p95": 0.13083,
+        "dp_p99": 0.2869,
+        "support_mass_mean": 0.98932,
+        "ppl_a": 1.2783,
+        "ppl_b": 1.4246,
+        "prompts": 96,
+        "kld_mean_ci95": [
+          0.092225,
+          0.110782
+        ],
+        "per_category": {
+          "agentic": {
+            "positions": 1536,
+            "kld_mean": 0.129009,
+            "top1_agree": 0.88997,
+            "dp_mean_abs": 0.074679
+          },
+          "code-other": {
+            "positions": 2560,
+            "kld_mean": 0.117647,
+            "top1_agree": 0.88906,
+            "dp_mean_abs": 0.076588
+          },
+          "code-py": {
+            "positions": 3072,
+            "kld_mean": 0.096873,
+            "top1_agree": 0.89551,
+            "dp_mean_abs": 0.069285
+          },
+          "finnish": {
+            "positions": 2048,
+            "kld_mean": 0.120038,
+            "top1_agree": 0.88867,
+            "dp_mean_abs": 0.078361
+          },
+          "instruction": {
+            "positions": 2218,
+            "kld_mean": 0.101323,
+            "top1_agree": 0.90848,
+            "dp_mean_abs": 0.068307
+          },
+          "math": {
+            "positions": 3072,
+            "kld_mean": 0.059808,
+            "top1_agree": 0.92578,
+            "dp_mean_abs": 0.052377
+          },
+          "multilingual": {
+            "positions": 1024,
+            "kld_mean": 0.143274,
+            "top1_agree": 0.84961,
+            "dp_mean_abs": 0.09278
+          },
+          "reasoning": {
+            "positions": 1936,
+            "kld_mean": 0.074937,
+            "top1_agree": 0.91684,
+            "dp_mean_abs": 0.060528
+          },
+          "structured": {
+            "positions": 2379,
+            "kld_mean": 0.085891,
+            "top1_agree": 0.91341,
+            "dp_mean_abs": 0.056866
+          },
+          "summarise": {
+            "positions": 2048,
+            "kld_mean": 0.090197,
+            "top1_agree": 0.89795,
+            "dp_mean_abs": 0.066355
+          },
+          "writing": {
+            "positions": 1963,
+            "kld_mean": 0.137947,
+            "top1_agree": 0.85023,
+            "dp_mean_abs": 0.088301
+          }
+        }
+      },
+      "generation": {
+        "positions": 1934,
+        "kld_mean": 0.032756,
+        "kld_p50": 0.000133,
+        "kld_p90": 0.085851,
+        "kld_p99": 0.526475,
+        "kld_p999": 1.273776,
+        "kld_max": 2.040129,
+        "top1_agree": 1.0,
+        "dp_mean_abs": 0.025732,
+        "dp_p1": -0.30355,
+        "dp_p5": -0.1009,
+        "dp_p50": 0.0,
+        "dp_p95": 0.08026,
+        "dp_p99": 0.25999,
+        "support_mass_mean": 0.9996,
+        "ppl_a": 1.0617,
+        "ppl_b": 1.0646,
+        "prompts": 96,
+        "identical": 0,
+        "identical_rate": 0.0,
+        "diverged": 96,
+        "first_divergence_p10": 2.0,
+        "first_divergence_p50": 9.0,
+        "first_divergence_min": 0,
+        "gen_tokens_a": 23856,
+        "gen_tokens_b": 24218
+      },
+      "dimensions": {
+        "model": "Qwen3.8-27B",
+        "quant": "nvfp4",
+        "kv": "fp8"
+      }
+    },
+    {
+      "label": "Qwen3.8 NVFP4 bf16 KV \u2192 fp8 KV",
+      "a": "q38-nvfp4",
+      "b": "q38-nvfp4-kvfp8",
+      "model": "Qwen3.8-27B",
+      "generated": "2026-09-06",
+      "vllm_version": "0.28.0",
+      "prompt_set": "quality/prompts.jsonl",
+      "settings": {
+        "max_tokens": 256,
+        "top_k": 20,
+        "thinking": true,
+        "temperature": 0,
+        "seed": 0,
+        "concurrency": 4
+      },
+      "teacher_forced": {
+        "positions": 23856,
+        "kld_mean": 0.026533,
+        "kld_p50": 0.002261,
+        "kld_p90": 0.072227,
+        "kld_p99": 0.261739,
+        "kld_p999": 0.807648,
+        "kld_max": 9.134898,
+        "top1_agree": 0.94668,
+        "dp_mean_abs": 0.032231,
+        "dp_p1": -0.20229,
+        "dp_p5": -0.1042,
+        "dp_p50": 0.0,
+        "dp_p95": 0.09957,
+        "dp_p99": 0.20536,
+        "support_mass_mean": 0.9909,
+        "ppl_a": 1.4257,
+        "ppl_b": 1.4246,
+        "prompts": 96,
+        "kld_mean_ci95": [
+          0.024482,
+          0.029667
+        ],
+        "per_category": {
+          "agentic": {
+            "positions": 1536,
+            "kld_mean": 0.03304,
+            "top1_agree": 0.94531,
+            "dp_mean_abs": 0.032682
+          },
+          "code-other": {
+            "positions": 2560,
+            "kld_mean": 0.027754,
+            "top1_agree": 0.94648,
+            "dp_mean_abs": 0.032969
+          },
+          "code-py": {
+            "positions": 3072,
+            "kld_mean": 0.023632,
+            "top1_agree": 0.94271,
+            "dp_mean_abs": 0.031604
+          },
+          "finnish": {
+            "positions": 2048,
+            "kld_mean": 0.031209,
+            "top1_agree": 0.93506,
+            "dp_mean_abs": 0.036862
+          },
+          "instruction": {
+            "positions": 2218,
+            "kld_mean": 0.03303,
+            "top1_agree": 0.95582,
+            "dp_mean_abs": 0.033746
+          },
+          "math": {
+            "positions": 3072,
+            "kld_mean": 0.014916,
+            "top1_agree": 0.96354,
+            "dp_mean_abs": 0.025304
+          },
+          "multilingual": {
+            "positions": 1024,
+            "kld_mean": 0.036313,
+            "top1_agree": 0.9375,
+            "dp_mean_abs": 0.042486
+          },
+          "reasoning": {
+            "positions": 1936,
+            "kld_mean": 0.021527,
+            "top1_agree": 0.9561,
+            "dp_mean_abs": 0.028771
+          },
+          "structured": {
+            "positions": 2379,
+            "kld_mean": 0.022415,
+            "top1_agree": 0.9504,
+            "dp_mean_abs": 0.026348
+          },
+          "summarise": {
+            "positions": 2048,
+            "kld_mean": 0.024864,
+            "top1_agree": 0.94629,
+            "dp_mean_abs": 0.032152
+          },
+          "writing": {
+            "positions": 1963,
+            "kld_mean": 0.036914,
+            "top1_agree": 0.92104,
+            "dp_mean_abs": 0.041467
+          }
+        }
+      },
+      "generation": {
+        "positions": 3468,
+        "kld_mean": 0.015163,
+        "kld_p50": 3.1e-05,
+        "kld_p90": 0.035223,
+        "kld_p99": 0.236664,
+        "kld_p999": 0.929232,
+        "kld_max": 2.325681,
+        "top1_agree": 1.0,
+        "dp_mean_abs": 0.018213,
+        "dp_p1": -0.15582,
+        "dp_p5": -0.06382,
+        "dp_p50": 0.0,
+        "dp_p95": 0.06435,
+        "dp_p99": 0.18966,
+        "support_mass_mean": 0.99945,
+        "ppl_a": 1.084,
+        "ppl_b": 1.0827,
+        "prompts": 96,
+        "identical": 0,
+        "identical_rate": 0.0,
+        "diverged": 96,
+        "first_divergence_p10": 2.0,
+        "first_divergence_p50": 26.0,
+        "first_divergence_min": 0,
+        "gen_tokens_a": 24199,
+        "gen_tokens_b": 24218
+      },
+      "dimensions": {
+        "model": "Qwen3.8-27B",
+        "quant": "nvfp4",
+        "kv": "fp8"
+      },
+      "notes": "Both sides NVFP4; isolates the fp8 KV cache cost on the dense model"
+    },
+    {
+      "label": "Qwen3.8 FP8 \u2192 NVFP4, CUDA graphs",
+      "a": "q38-fp8",
+      "b": "q38-nvfp4-graphs",
+      "model": "Qwen3.8-27B",
+      "generated": "2026-09-06",
+      "vllm_version": "0.28.0",
+      "prompt_set": "quality/prompts.jsonl",
+      "settings": {
+        "max_tokens": 256,
+        "top_k": 20,
+        "thinking": true,
+        "temperature": 0,
+        "seed": 0,
+        "concurrency": 1
+      },
+      "teacher_forced": {
+        "positions": 23856,
+        "kld_mean": 0.10176,
+        "kld_p50": 0.007864,
+        "kld_p90": 0.296179,
+        "kld_p99": 1.032517,
+        "kld_p999": 2.592781,
+        "kld_max": 6.75846,
+        "top1_agree": 0.89801,
+        "dp_mean_abs": 0.069232,
+        "dp_p1": -0.50956,
+        "dp_p5": -0.29211,
+        "dp_p50": -3e-05,
+        "dp_p95": 0.13212,
+        "dp_p99": 0.28174,
+        "support_mass_mean": 0.98937,
+        "ppl_a": 1.2783,
+        "ppl_b": 1.4238,
+        "prompts": 96,
+        "kld_mean_ci95": [
+          0.093006,
+          0.111755
+        ],
+        "per_category": {
+          "agentic": {
+            "positions": 1536,
+            "kld_mean": 0.131699,
+            "top1_agree": 0.87956,
+            "dp_mean_abs": 0.077165
+          },
+          "code-other": {
+            "positions": 2560,
+            "kld_mean": 0.118864,
+            "top1_agree": 0.89453,
+            "dp_mean_abs": 0.076472
+          },
+          "code-py": {
+            "positions": 3072,
+            "kld_mean": 0.097956,
+            "top1_agree": 0.89681,
+            "dp_mean_abs": 0.069487
+          },
+          "finnish": {
+            "positions": 2048,
+            "kld_mean": 0.121675,
+            "top1_agree": 0.88965,
+            "dp_mean_abs": 0.07922
+          },
+          "instruction": {
+            "positions": 2218,
+            "kld_mean": 0.103467,
+            "top1_agree": 0.91389,
+            "dp_mean_abs": 0.066707
+          },
+          "math": {
+            "positions": 3072,
+            "kld_mean": 0.062024,
+            "top1_agree": 0.92969,
+            "dp_mean_abs": 0.051315
+          },
+          "multilingual": {
+            "positions": 1024,
+            "kld_mean": 0.144221,
+            "top1_agree": 0.85156,
+            "dp_mean_abs": 0.093524
+          },
+          "reasoning": {
+            "positions": 1936,
+            "kld_mean": 0.076249,
+            "top1_agree": 0.91167,
+            "dp_mean_abs": 0.061172
+          },
+          "structured": {
+            "positions": 2379,
+            "kld_mean": 0.086496,
+            "top1_agree": 0.91341,
+            "dp_mean_abs": 0.056754
+          },
+          "summarise": {
+            "positions": 2048,
+            "kld_mean": 0.087472,
+            "top1_agree": 0.89844,
+            "dp_mean_abs": 0.065852
+          },
+          "writing": {
+            "positions": 1963,
+            "kld_mean": 0.13787,
+            "top1_agree": 0.85176,
+            "dp_mean_abs": 0.087587
+          }
+        }
+      },
+      "generation": {
+        "positions": 1993,
+        "kld_mean": 0.030772,
+        "kld_p50": 0.000126,
+        "kld_p90": 0.076665,
+        "kld_p99": 0.506391,
+        "kld_p999": 1.129355,
+        "kld_max": 1.366878,
+        "top1_agree": 1.0,
+        "dp_mean_abs": 0.024209,
+        "dp_p1": -0.24925,
+        "dp_p5": -0.08655,
+        "dp_p50": 0.0,
+        "dp_p95": 0.0819,
+        "dp_p99": 0.23101,
+        "support_mass_mean": 0.99958,
+        "ppl_a": 1.0635,
+        "ppl_b": 1.0657,
+        "prompts": 96,
+        "identical": 0,
+        "identical_rate": 0.0,
+        "diverged": 96,
+        "first_divergence_p10": 2.0,
+        "first_divergence_p50": 9.0,
+        "first_divergence_min": 0,
+        "gen_tokens_a": 23856,
+        "gen_tokens_b": 24039
+      },
+      "dimensions": {
+        "model": "Qwen3.8-27B",
+        "quant": "nvfp4",
+        "graphs": "on"
+      }
+    },
+    {
+      "label": "Qwen3.8 NVFP4 eager \u2192 CUDA graphs",
+      "a": "q38-nvfp4",
+      "b": "q38-nvfp4-graphs",
+      "model": "Qwen3.8-27B",
+      "generated": "2026-09-06",
+      "vllm_version": "0.28.0",
+      "prompt_set": "quality/prompts.jsonl",
+      "settings": {
+        "max_tokens": 256,
+        "top_k": 20,
+        "thinking": true,
+        "temperature": 0,
+        "seed": 0,
+        "concurrency": 4
+      },
+      "teacher_forced": {
+        "positions": 23856,
+        "kld_mean": 0.026583,
+        "kld_p50": 0.002184,
+        "kld_p90": 0.071308,
+        "kld_p99": 0.265732,
+        "kld_p999": 1.061518,
+        "kld_max": 4.014652,
+        "top1_agree": 0.94593,
+        "dp_mean_abs": 0.031957,
+        "dp_p1": -0.20518,
+        "dp_p5": -0.09819,
+        "dp_p50": 0.0,
+        "dp_p95": 0.10059,
+        "dp_p99": 0.20607,
+        "support_mass_mean": 0.9909,
+        "ppl_a": 1.4257,
+        "ppl_b": 1.4238,
+        "prompts": 96,
+        "kld_mean_ci95": [
+          0.024634,
+          0.030305
+        ],
+        "per_category": {
+          "agentic": {
+            "positions": 1536,
+            "kld_mean": 0.029216,
+            "top1_agree": 0.94076,
+            "dp_mean_abs": 0.032069
+          },
+          "code-other": {
+            "positions": 2560,
+            "kld_mean": 0.02543,
+            "top1_agree": 0.94805,
+            "dp_mean_abs": 0.031658
+          },
+          "code-py": {
+            "positions": 3072,
+            "kld_mean": 0.024443,
+            "top1_agree": 0.94173,
+            "dp_mean_abs": 0.031651
+          },
+          "finnish": {
+            "positions": 2048,
+            "kld_mean": 0.034167,
+            "top1_agree": 0.93457,
+            "dp_mean_abs": 0.037777
+          },
+          "instruction": {
+            "positions": 2218,
+            "kld_mean": 0.03339,
+            "top1_agree": 0.95311,
+            "dp_mean_abs": 0.033885
+          },
+          "math": {
+            "positions": 3072,
+            "kld_mean": 0.015767,
+            "top1_agree": 0.96452,
+            "dp_mean_abs": 0.025405
+          },
+          "multilingual": {
+            "positions": 1024,
+            "kld_mean": 0.037247,
+            "top1_agree": 0.93555,
+            "dp_mean_abs": 0.041333
+          },
+          "reasoning": {
+            "positions": 1936,
+            "kld_mean": 0.022417,
+            "top1_agree": 0.95403,
+            "dp_mean_abs": 0.028389
+          },
+          "structured": {
+            "positions": 2379,
+            "kld_mean": 0.024053,
+            "top1_agree": 0.95292,
+            "dp_mean_abs": 0.026561
+          },
+          "summarise": {
+            "positions": 2048,
+            "kld_mean": 0.021748,
+            "top1_agree": 0.94434,
+            "dp_mean_abs": 0.030867
+          },
+          "writing": {
+            "positions": 1963,
+            "kld_mean": 0.03736,
+            "top1_agree": 0.919,
+            "dp_mean_abs": 0.041044
+          }
+        }
+      },
+      "generation": {
+        "positions": 3454,
+        "kld_mean": 0.015706,
+        "kld_p50": 5.5e-05,
+        "kld_p90": 0.035679,
+        "kld_p99": 0.233722,
+        "kld_p999": 1.284242,
+        "kld_max": 2.46449,
+        "top1_agree": 1.0,
+        "dp_mean_abs": 0.018381,
+        "dp_p1": -0.17067,
+        "dp_p5": -0.05907,
+        "dp_p50": 0.0,
+        "dp_p95": 0.06713,
+        "dp_p99": 0.16839,
+        "support_mass_mean": 0.99898,
+        "ppl_a": 1.0971,
+        "ppl_b": 1.0961,
+        "prompts": 96,
+        "identical": 0,
+        "identical_rate": 0.0,
+        "diverged": 96,
+        "first_divergence_p10": 2.0,
+        "first_divergence_p50": 22.0,
+        "first_divergence_min": 0,
+        "gen_tokens_a": 24199,
+        "gen_tokens_b": 24039
+      },
+      "dimensions": {
+        "model": "Qwen3.8-27B",
+        "quant": "nvfp4",
+        "graphs": "on",
+        "kind": "floor"
+      },
+      "notes": "Both sides NVFP4, bf16 KV; same weights, different kernel path (torch.compile + CUDA graphs, text-only, seqs 32). The server is deterministic so this is the between-configuration floor on the W4A4 model, not run-to-run noise."
+    }
   ]
 }

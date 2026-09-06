@@ -4,6 +4,8 @@ Basic project structure
 Containerfile            vLLM is run in a container to easily pin versions etc
 profiles/                One env file per model configuration, fed to the container by run.sh
 bench.py                 Synthetic concurrency sweep against a running server
+quality.py               Divergence probe: does a flag change what the model says? (docs/divergence.md)
+quality/prompts.jsonl    The fixed prompt set the probe scores; captures land in quality/captures/ (untracked)
 docs/                    Publicly viewable interactive page for browsing benchmark results
 docs/results.json        The actual benchmark results
 README.md                Human written document presenting the project and repository
@@ -36,3 +38,9 @@ raising it rather than rewriting the human's voice.
 configurations. Do not hand-roll a one-off timing script and report from it;
 run the sweep and merge into `docs/results.json`. Anything ad-hoc is a finding
 for `agent-notes/`, not a benchmark result.
+
+`quality.py` is the equivalent for "is it still the same model". Run
+`quality.py jitter` on a configuration before trusting any comparison against
+it: the MoE servers are not deterministic run to run, and a comparison at the
+noise floor means nothing. Comparison summaries merge into `docs/results.json`
+the same way sweeps do; the raw captures do not go in git.
