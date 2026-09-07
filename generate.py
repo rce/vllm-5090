@@ -7,7 +7,7 @@
 
 Same two-stage load as the sweep (encode the prompt, drop the text encoder,
 then load the generator), so it fits the card the same way; the timings it
-prints are comparable to docs/results.json. LTX-2.5 clips come with audio.
+prints are comparable to docs/video.json. LTX-2.5 clips come with audio.
 
 Loading is ~25 s per clip on LTX. To pay it once, keep a server running:
 

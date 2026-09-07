@@ -9,8 +9,11 @@ quality/prompts.jsonl    The fixed prompt set the probe scores; captures land in
 agentic.py               Tool-call smoke checks and a replayed agent-loop benchmark (warm vs cold prefix cache)
 Containerfile.video      diffusers on top of the vLLM image, for the video generation side
 video.sh / video.py      Video generation length/speed sweep: how long a clip costs, how long a clip fits
-docs/                    Publicly viewable interactive page for browsing benchmark results
-docs/results.json        The actual benchmark results
+docs/                    Publicly viewable interactive pages for browsing benchmark results
+docs/index.html          The LLM serving page; docs/video.html is the video generation page
+docs/results.json        The actual LLM benchmark results
+docs/video.json          The video generation results, same idea, separate file and page
+docs/style.css, charts.js  Shared by both pages: the stylesheet, the tooltip and the line chart
 README.md                Human written document presenting the project and repository
 agent-notes/             The location where agents can and should write their notes and plans as markdown files
 ```
@@ -57,5 +60,6 @@ into `docs/results.json` (`toolcalls`, `loops`).
 of growing length until VRAM runs out, reporting wall time, per-step time,
 decode time and peak VRAM per clip. It runs in its own container
 (`Containerfile.video`, launched by `video.sh`) and merges into
-`docs/results.json` (`videos`). The clips land in `video/out/` (untracked);
-nothing scores them.
+`docs/video.json` (`videos`), which `docs/video.html` shows; the video side is
+kept apart from the LLM results on purpose. The clips land in `video/out/`
+(untracked); nothing scores them.

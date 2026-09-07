@@ -3,9 +3,10 @@
 A pivot from serving LLMs to text-to-video diffusion on the same RTX 5090.
 The question for now is purely speed and length: wall time per clip, how it
 grows with clip length, and where 32 GB runs out. Nothing here judges the
-pictures. Everything is merged into `docs/results.json` under `videos` and
-shown on the results page; the clips themselves are in `video/out/`
-(untracked).
+pictures. Everything is merged into `docs/video.json` under `videos` and
+shown on its own page, `docs/video.html` (the LLM results stay in
+`docs/results.json` and `docs/index.html`; the two pages share `style.css`
+and `charts.js`); the clips themselves are in `video/out/` (untracked).
 
 ## The landscape (September 2026)
 
@@ -189,7 +190,7 @@ instead of 100, same s/step as the base model within noise); but the tiled
 fp32 VAE decode is the same 50 s it always was, so the clip takes 64 s
 instead of 377 s — 6×, not 24×. Decode is 75–84% of every clip. It is
 inherent: without tiling the decode does not fit at all (a 1 s clip OOMs at
-27.9 GB, `wan2.2-5b-turbo 1280x704 no VAE tiling` in `results.json`), and
+27.9 GB, `wan2.2-5b-turbo 1280x704 no VAE tiling` in `video.json`), and
 the model card wants the VAE in fp32. A bf16 VAE or a lighter decoder
 (TAEHV-style) is where the next 3× is on this model, not the transformer.
 
@@ -280,13 +281,13 @@ wall-per-clip. Not measured here.
 
 ```
 podman build -f Containerfile.video -t video-5090 .
-./video.sh --model wan2.2-5b --label "wan2.2-5b 1280x704" --out docs/results.json --dim variant=default
-./video.sh --model hunyuan-1.5 --frames 25,49,81,121 --label "hunyuan-1.5 1280x720" --out docs/results.json
-./video.sh --model ltx-2.5 --label "ltx-2.5 distilled 960x544" --out docs/results.json --dim variant=default
-./video.sh --model wan2.2-5b-turbo --label "wan2.2-5b-turbo 1280x704" --out docs/results.json --dim variant=default
-./video.sh --model ltx-2.5 --size 640x352 --frames 25,49,97,121,241,361 --label "ltx-2.5 distilled 640x352" --out docs/results.json --dim variant=preview
-./video.sh --model ltx-2.5 --size 640x352 --fps 12 --frames 25,49,97,121 --label "ltx-2.5 distilled 640x352 12fps" --out docs/results.json --dim variant=preview
-./video.sh --model wan2.2-5b-turbo --size 640x352 --frames 25,49,81,121 --label "wan2.2-5b-turbo 640x352" --out docs/results.json --dim variant=preview
+./video.sh --model wan2.2-5b --label "wan2.2-5b 1280x704" --out docs/video.json --dim variant=default
+./video.sh --model hunyuan-1.5 --frames 25,49,81,121 --label "hunyuan-1.5 1280x720" --out docs/video.json
+./video.sh --model ltx-2.5 --label "ltx-2.5 distilled 960x544" --out docs/video.json --dim variant=default
+./video.sh --model wan2.2-5b-turbo --label "wan2.2-5b-turbo 1280x704" --out docs/video.json --dim variant=default
+./video.sh --model ltx-2.5 --size 640x352 --frames 25,49,97,121,241,361 --label "ltx-2.5 distilled 640x352" --out docs/video.json --dim variant=preview
+./video.sh --model ltx-2.5 --size 640x352 --fps 12 --frames 25,49,97,121 --label "ltx-2.5 distilled 640x352 12fps" --out docs/video.json --dim variant=preview
+./video.sh --model wan2.2-5b-turbo --size 640x352 --frames 25,49,81,121 --label "wan2.2-5b-turbo 640x352" --out docs/video.json --dim variant=preview
 ```
 
 The Wan sweep to 241 frames takes ~40 minutes; detach it. The distilled
@@ -294,7 +295,7 @@ models sweep in a few minutes. `--frames`, `--size`, `--steps`,
 `--guidance`, `--fps` override the model defaults (`--fps` only changes the
 content for LTX, which is conditioned on it; for the others it is playback
 speed); `--dim` tags the entry for the page's filters. Clips land in
-`video/out/<label>/`. The Hunyuan entry in `results.json` was transcribed
+`video/out/<label>/`. The Hunyuan entry in `video.json` was transcribed
 from the run's table after the sweep was stopped by hand, so it lacks the
 reserved-memory and export columns.
 

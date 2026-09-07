@@ -5,235 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>vLLM on one RTX 5090 — benchmark results</title>
 <link rel="preload" href="results.json" as="fetch" crossorigin="anonymous">
-<style>
-  :root {
-    color-scheme: light;
-    --page:           #f9f9f7;
-    --surface-1:      #fcfcfb;
-    --text-primary:   #0b0b0b;
-    --text-secondary: #52514e;
-    --text-muted:     #898781;
-    --gridline:       #e1e0d9;
-    --baseline:       #c3c2b7;
-    --border:         rgba(11,11,11,0.10);
-    /* The validated 8-slot categorical order, both modes. Model identity uses
-       the first two; sweep charts assign the same slots to configurations. */
-    --series-1:       #2a78d6;
-    --series-2:       #eb6834;
-    --series-3:       #1baf7a;
-    --series-4:       #eda100;
-    --series-5:       #e87ba4;
-    --series-6:       #008300;
-    --series-7:       #4a3aa7;
-    --series-8:       #e34948;
-    --series-moe:     #2a78d6;
-    --series-dense:   #eb6834;
-    --status-critical:#d03b3b;
-    --status-warning: #fab219;
-    --status-serious: #ec835a;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:where(:not([data-theme="light"])) {
-      color-scheme: dark;
-      --page:           #0d0d0d;
-      --surface-1:      #1a1a19;
-      --text-primary:   #ffffff;
-      --text-secondary: #c3c2b7;
-      --text-muted:     #898781;
-      --gridline:       #2c2c2a;
-      --baseline:       #383835;
-      --border:         rgba(255,255,255,0.10);
-      --series-1:       #3987e5;
-      --series-2:       #d95926;
-      --series-3:       #199e70;
-      --series-4:       #c98500;
-      --series-5:       #d55181;
-      --series-6:       #008300;
-      --series-7:       #9085e9;
-      --series-8:       #e66767;
-      --series-moe:     #3987e5;
-      --series-dense:   #d95926;
-    }
-  }
-  :root[data-theme="dark"] {
-    color-scheme: dark;
-    --page:           #0d0d0d;
-    --surface-1:      #1a1a19;
-    --text-primary:   #ffffff;
-    --text-secondary: #c3c2b7;
-    --text-muted:     #898781;
-    --gridline:       #2c2c2a;
-    --baseline:       #383835;
-    --border:         rgba(255,255,255,0.10);
-    --series-1:       #3987e5;
-    --series-2:       #d95926;
-    --series-3:       #199e70;
-    --series-4:       #c98500;
-    --series-5:       #d55181;
-    --series-6:       #008300;
-    --series-7:       #9085e9;
-    --series-8:       #e66767;
-    --series-moe:     #3987e5;
-    --series-dense:   #d95926;
-  }
-
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--page);
-    color: var(--text-primary);
-    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
-  }
-  .wrap { max-width: 980px; margin: 0 auto; padding: 40px 20px 72px; }
-
-  header h1 { font-size: 26px; line-height: 1.25; margin: 0 0 8px; letter-spacing: -0.01em; }
-  header p  { margin: 0; color: var(--text-secondary); max-width: 68ch; }
-  .meta { margin-top: 14px; color: var(--text-muted); font-size: 12.5px; }
-  .meta span::after { content: " · "; color: var(--baseline); }
-  .meta span:last-child::after { content: ""; }
-
-  .card {
-    background: var(--surface-1);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 20px 22px;
-    margin-top: 22px;
-  }
-  .card > h2 {
-    font-size: 15px; margin: 0 0 3px; letter-spacing: -0.005em;
-  }
-  .card > .sub { margin: 0 0 18px; color: var(--text-secondary); font-size: 12.5px; }
-
-  /* Hero */
-  .hero { display: flex; flex-wrap: wrap; gap: 28px 44px; align-items: flex-start; }
-  .stat .label { color: var(--text-secondary); font-size: 12.5px; margin-bottom: 4px; }
-  .stat .value { font-size: 38px; line-height: 1.05; letter-spacing: -0.02em; }
-  .stat .note  { color: var(--text-muted); font-size: 12px; margin-top: 5px; max-width: 30ch; }
-
-  /* Filters */
-  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 24px; }
-  .filters .lab { color: var(--text-secondary); font-size: 12.5px; margin-right: 4px; }
-  .chip {
-    font: inherit; font-size: 12.5px;
-    background: var(--surface-1); color: var(--text-secondary);
-    border: 1px solid var(--border); border-radius: 999px;
-    padding: 5px 13px; cursor: pointer;
-  }
-  .chip:hover { color: var(--text-primary); }
-  .chip[aria-pressed="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
-  .chip:focus-visible { outline: 2px solid var(--series-moe); outline-offset: 2px; }
-
-  /* Legend */
-  .legend { display: flex; gap: 18px; margin: 0 0 16px; padding: 0; list-style: none; font-size: 12.5px; color: var(--text-secondary); }
-  .legend li { display: flex; align-items: center; gap: 7px; }
-  .swatch { width: 11px; height: 11px; border-radius: 2px; flex: none; }
-
-  /* Bars */
-  .chart { display: flex; flex-direction: column; gap: 10px; }
-  .row { display: grid; grid-template-columns: minmax(120px, 246px) 1fr; gap: 14px; align-items: center; }
-  .row .name { color: var(--text-secondary); font-size: 12.5px; text-align: right; }
-  .track {
-    position: relative; height: 24px;
-    display: flex; align-items: center; gap: 9px;
-    border-left: 1px solid var(--baseline);
-    /* Room for the value label, so a bar at full scale never pushes its
-       number past the card edge on a narrow screen. The axis reserves the
-       same width so its ticks stay under the bars. */
-    padding: 0 68px 0 0;
-    cursor: default;
-  }
-  .bar { height: 24px; border-radius: 0 4px 4px 0; min-width: 2px; transition: filter .12s; }
-  .track:hover .bar, .track:focus-visible .bar { filter: brightness(1.12); }
-  .track:focus-visible { outline: 2px solid var(--text-muted); outline-offset: 3px; border-radius: 3px; }
-  .val { font-size: 12.5px; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .axis { margin-top: 12px; padding: 0 68px 0 0; color: var(--text-muted); font-size: 11.5px; font-variant-numeric: tabular-nums; }
-  .axis .inner { display: flex; justify-content: space-between; }
-  .axis-title { margin-top: 8px; color: var(--text-muted); font-size: 11.5px; }
-
-  /* Tooltip */
-  #tip {
-    position: fixed; z-index: 20; pointer-events: none; opacity: 0;
-    transition: opacity .1s;
-    background: var(--surface-1); color: var(--text-primary);
-    border: 1px solid var(--border); border-radius: 7px;
-    padding: 9px 11px; font-size: 12.5px; max-width: 300px;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.14);
-  }
-  #tip .t-val { font-size: 15px; font-variant-numeric: tabular-nums; }
-  #tip .t-name { color: var(--text-secondary); margin-top: 2px; }
-  #tip .t-meta { color: var(--text-muted); margin-top: 6px; font-size: 11.5px; }
-  #tip .key { display: inline-block; width: 14px; height: 2px; vertical-align: middle; margin-right: 6px; }
-
-  /* Table */
-  .scroll { overflow-x: auto; }
-  table { border-collapse: collapse; width: 100%; font-size: 12.5px; min-width: 720px; }
-  th, td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--gridline); white-space: nowrap; }
-  th:first-child, td:first-child { text-align: left; white-space: normal; min-width: 190px; }
-  thead th { color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--baseline); }
-  tbody td { font-variant-numeric: tabular-nums; color: var(--text-secondary); }
-  tbody td:first-child { color: var(--text-primary); }
-  tbody tr:last-child td { border-bottom: none; }
-  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 8px; vertical-align: baseline; }
-  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; }
-
-  /* Dimension filters */
-  .dimbar { display: flex; flex-wrap: wrap; gap: 14px 22px; margin: 0 0 18px; }
-  .dimgroup { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-  .dimgroup .glab { color: var(--text-muted); font-size: 11.5px; margin-right: 2px; }
-  .dimgroup .chip { padding: 3px 10px; font-size: 12px; }
-  .capnote { color: var(--text-muted); font-size: 11.5px; margin: 0 0 14px; }
-
-  /* Line charts */
-  .linechart { width: 100%; height: auto; display: block; overflow: visible; }
-  .linechart .grid { stroke: var(--gridline); stroke-width: 1; }
-  .linechart .axisline { stroke: var(--baseline); stroke-width: 1; }
-  .linechart .tick { fill: var(--text-muted); font-size: 11px; }
-  .linechart .ser { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
-  .linechart .ring { stroke: var(--surface-1); stroke-width: 2; }
-  .linechart .endlab { fill: var(--text-primary); font-size: 11.5px; }
-  .linechart .cross { stroke: var(--text-muted); stroke-width: 1; }
-  .linechart .hit { fill: transparent; }
-  .axname { color: var(--text-muted); font-size: 11.5px; margin-top: 6px; }
-
-  /* Narrow screens. The wide tables keep their own horizontal scroll; the page
-     body never scrolls sideways. */
-  @media (max-width: 640px) {
-    .wrap { padding: 24px 12px 56px; }
-    .card { padding: 16px 14px; }
-    header h1 { font-size: 21px; }
-    .hero { gap: 20px 24px; }
-    .stat .value { font-size: 30px; }
-    .stat .note { max-width: none; }
-    /* Bar rows stack: the label sits above its own bar instead of being
-       squeezed into a column that cannot hold it. */
-    .row { grid-template-columns: 1fr; gap: 3px; }
-    .row .name { text-align: left; }
-    .legend { gap: 10px 16px; flex-wrap: wrap; }
-    .dimbar { gap: 10px 14px; }
-  }
-  .bar.floor { background-image: repeating-linear-gradient(135deg, transparent 0 4px, rgba(255,255,255,.55) 4px 6px); }
-  .row .name .sm, td .sm { display: block; color: var(--text-muted); font-size: 11px; }
-  td .sm.suspect { color: var(--text-secondary); max-width: 34ch; white-space: normal; }
-  .note-inline { color: var(--text-muted); font-size: 11.5px; margin: -8px 0 16px; }
-
-  /* Failures */
-  .fail { display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--gridline); }
-  .fail:last-child { border-bottom: none; padding-bottom: 0; }
-  .fail:first-of-type { padding-top: 0; }
-  .fail .ico { flex: none; width: 18px; height: 18px; margin-top: 1px; }
-  .fail .ftitle { font-size: 13px; }
-  .fail .fstate { font-size: 11.5px; color: var(--text-secondary); margin: 2px 0 5px; }
-  .fail .fwhy { color: var(--text-secondary); font-size: 12.5px; }
-  .fail .fcfg { color: var(--text-muted); font-size: 11.5px; margin-top: 5px; }
-
-  .err { color: var(--status-critical); }
-  footer { margin-top: 30px; color: var(--text-muted); font-size: 12px; }
-  a { color: inherit; }
-</style>
+<link rel="stylesheet" href="style.css">
+<script src="charts.js"></script>
 </head>
 <body>
 <div class="wrap">
   <header>
+    <nav class="pages" aria-label="Result pages"><span>LLM serving</span><span class="sep"></span><a href="video.html">Video generation</a></nav>
     <h1>vLLM on one RTX 5090</h1>
     <p>Serving Qwen3.x locally on a single 32 GiB Blackwell card. Every number here was
        measured on that machine — single-stream decode, 300-token completions, thinking
@@ -466,49 +244,6 @@
       </div>
     </div>
 
-    <div class="card" id="videoSection" hidden>
-      <h2>Video generation</h2>
-      <p class="sub">A different workload on the same card: text-to-video diffusion models
-        through <code>diffusers</code>, one fixed prompt and seed, the clip made longer and
-        longer until 32 GB runs out. Nothing here judges the pictures; it answers how long a
-        clip costs and how long a clip fits. Produced by <code>video.py</code>.</p>
-      <p class="note-inline">Colours identify <em>configurations</em>. The x axis is clip
-        length in seconds of video.</p>
-      <ul class="legend" id="legendVideo"></ul>
-
-      <h3 style="font-size:13px;margin:22px 0 2px">Wall time per clip</h3>
-      <p class="sub">Denoising plus VAE decode, prompt already encoded. Lower is better; the
-        curve bends upward because attention cost grows faster than the frame count.</p>
-      <svg class="linechart" id="chartVideoWall" viewBox="0 0 880 300" role="img"></svg>
-      <div class="axname">seconds of video</div>
-
-      <h3 style="font-size:13px;margin:22px 0 2px">Peak VRAM</h3>
-      <p class="sub">Peak allocated during the clip, weights included. The card has about
-        31.4 GB usable.</p>
-      <svg class="linechart" id="chartVideoVram" viewBox="0 0 880 300" role="img"></svg>
-      <div class="axname">seconds of video</div>
-
-      <h3 style="font-size:13px;margin:26px 0 10px">Every clip</h3>
-      <div class="scroll">
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">Configuration</th>
-              <th scope="col">Frames</th>
-              <th scope="col">Clip</th>
-              <th scope="col">Wall</th>
-              <th scope="col">Per step</th>
-              <th scope="col">Decode</th>
-              <th scope="col">Video s / min</th>
-              <th scope="col">Peak VRAM</th>
-              <th scope="col">Status</th>
-            </tr>
-          </thead>
-          <tbody id="videoBody"></tbody>
-        </table>
-      </div>
-    </div>
-
     <div class="card">
       <h2>What did not work</h2>
       <p class="sub">Recorded because these are the configurations you would reach for first.</p>
@@ -584,47 +319,13 @@
   // --- legend (identity never rests on color alone) -----------------------
   const models = [...new Set(runs.map(r => r.model))];
   for (const el of [$('legend'), $('legend2')]) {
-    for (const m of models) {
-      const li = document.createElement('li');
-      const sw2 = document.createElement('span');
-      sw2.className = 'swatch';
-      sw2.style.background = COLOR[m];
-      const tx = document.createElement('span');
-      tx.textContent = m;
-      li.append(sw2, tx);
-      el.appendChild(li);
-    }
+    Charts.legend(el, models.map(m => ({ label: m, color: COLOR[m] })));
   }
 
-  // --- tooltip ------------------------------------------------------------
-  const tip = $('tip');
-  function showTip(ev, run, valueText, metaText, title) {
-    tip.innerHTML = '';
-    const v = document.createElement('div');
-    v.className = 't-val';
-    const key = document.createElement('span');
-    key.className = 'key';
-    key.style.background = COLOR[run.model] || 'var(--series-3)';
-    v.append(key, document.createTextNode(valueText));
-    const n = document.createElement('div');
-    n.className = 't-name';
-    n.textContent = title || shortName(run);
-    const m = document.createElement('div');
-    m.className = 't-meta';
-    m.textContent = metaText;
-    tip.append(v, n, m);
-    tip.style.opacity = '1';
-    moveTip(ev);
-  }
-  function moveTip(ev) {
-    const r = tip.getBoundingClientRect();
-    let x = (ev.clientX ?? 0) + 14, y = (ev.clientY ?? 0) + 16;
-    if (x + r.width > innerWidth - 8) x = innerWidth - r.width - 8;
-    if (y + r.height > innerHeight - 8) y = (ev.clientY ?? 0) - r.height - 12;
-    tip.style.left = x + 'px';
-    tip.style.top = Math.max(8, y) + 'px';
-  }
-  const hideTip = () => { tip.style.opacity = '0'; };
+  // --- tooltip (shared with video.html; see charts.js) --------------------
+  const { moveTip, hideTip, drawLine } = Charts;
+  const showTip = (ev, run, valueText, metaText, title) =>
+    Charts.showTip(ev, COLOR[run.model] || 'var(--series-3)', valueText, title || shortName(run), metaText);
 
   // --- bar chart builder --------------------------------------------------
   function drawChart(host, axisHost, list, pick, label, meta) {
@@ -765,179 +466,10 @@
   }
 
   // --- concurrency sweeps -------------------------------------------------
-  // The full validated 8-slot categorical order, assigned in fixed order and
-  // never cycled: a 9th sweep needs faceting, not a generated hue.
-  const SWEEP_COLORS = Array.from({ length: 8 }, (_, i) => `var(--series-${i + 1})`);
+  // Configurations take the categorical slots in fixed order, never cycled:
+  // a 9th sweep needs faceting, not a generated hue.
+  const SWEEP_COLORS = Charts.SERIES;
   const sweeps = (data.sweeps || []).map((s, i) => ({ ...s, color: SWEEP_COLORS[i % SWEEP_COLORS.length] }));
-  const SVGNS = 'http://www.w3.org/2000/svg';
-  const svgEl = (tag, attrs) => {
-    const n = document.createElementNS(SVGNS, tag);
-    for (const [k, v] of Object.entries(attrs || {})) n.setAttribute(k, v);
-    return n;
-  };
-
-  function showRowsTip(ev, title, rows) {
-    tip.innerHTML = '';
-    const h = document.createElement('div');
-    h.className = 't-name';
-    h.style.marginTop = '0';
-    h.textContent = title;
-    tip.appendChild(h);
-    for (const r of rows) {
-      const line = document.createElement('div');
-      line.className = 't-val';
-      line.style.fontSize = '13px';
-      line.style.marginTop = '4px';
-      const key = document.createElement('span');
-      key.className = 'key';
-      key.style.background = r.color;
-      line.append(key, document.createTextNode(r.value));
-      const sub = document.createElement('div');
-      sub.className = 't-meta';
-      sub.style.marginTop = '1px';
-      sub.textContent = r.label;
-      tip.append(line, sub);
-    }
-    tip.style.opacity = '1';
-    moveTip(ev);
-  }
-
-  function drawLine(svg, series, pick, fmtVal, opts) {
-    const xKey = (opts && opts.xKey) || 'concurrency';
-    const xTitle = (opts && opts.xTitle) || ((c) => c + (c === 1 ? ' concurrent request' : ' concurrent requests'));
-    svg.innerHTML = '';
-    // Render at the container's real pixel width rather than scaling a fixed
-    // viewBox, so tick and label text stays at its true size on a phone.
-    const W = Math.max(280, Math.floor(svg.parentElement.clientWidth) || 880);
-    const narrow = W < 560;
-    const H = narrow ? 240 : 300;
-    // No right gutter when narrow: end labels are dropped there anyway.
-    const L = narrow ? 42 : 56, R = narrow ? 14 : 104, T = 14, B = 36;
-    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-    const pw = W - L - R, ph = H - T - B;
-    const xs = [...new Set(series.flatMap(s => s.levels.map(l => l[xKey])))].sort((a, b) => a - b);
-    if (!xs.length) return;
-    const vals = series.flatMap(s => s.levels.map(pick)).filter(v => v != null);
-    if (!vals.length) return;
-    const rawMax = Math.max(...vals);
-    const mag = Math.pow(10, Math.floor(Math.log10(rawMax)));
-    // Log y when the series span decades (4 s next to 1000 s would flatten
-    // the fast ones to the axis); numeric x when the levels are not shared
-    // steps (clip lengths at two frame rates).
-    const log = !!(opts && opts.log);
-    const yMin = log ? Math.pow(10, Math.floor(Math.log10(Math.min(...vals)))) : 0;
-    const yMax = log ? Math.pow(10, Math.ceil(Math.log10(rawMax))) : Math.ceil(rawMax / (mag / 2)) * (mag / 2);
-    const numeric = !!(opts && opts.xNumeric) && xs.length > 1;
-    const xMin = xs[0], xMax = xs[xs.length - 1];
-    const X = (c) => L + (xs.length === 1 ? pw / 2
-      : numeric ? ((c - xMin) / (xMax - xMin)) * pw : (xs.indexOf(c) / (xs.length - 1)) * pw);
-    const Y = log
-      ? (v) => T + (1 - (Math.log10(v) - Math.log10(yMin)) / (Math.log10(yMax) - Math.log10(yMin))) * ph
-      : (v) => T + (1 - v / yMax) * ph;
-
-    // gridlines + y ticks. Decimals come from the step size, not the value, so
-    // a 0.5 step never renders 1.5 as "2". Log axes tick at 1-2-5 per decade.
-    const ticks = [];
-    if (log) {
-      const decades = Math.round(Math.log10(yMax) - Math.log10(yMin));
-      for (let d = yMin; d < yMax; d *= 10) ticks.push(...(decades <= 3 ? [d, 2 * d, 5 * d] : [d]));
-      ticks.push(yMax);
-    } else {
-      for (let i = 0; i <= 4; i++) ticks.push((yMax / 4) * i);
-    }
-    const step = log ? yMin : yMax / 4;
-    const dec = step >= 1 ? 0 : step >= 0.1 ? 1 : 2;
-    ticks.forEach((v, i) => {
-      const y = Y(v);
-      svg.appendChild(svgEl('line', { class: i === 0 ? 'axisline' : 'grid', x1: L, x2: L + pw, y1: y, y2: y }));
-      const t = svgEl('text', { class: 'tick', x: L - 10, y: y + 4, 'text-anchor': 'end' });
-      t.textContent = dec ? v.toFixed(dec) : Math.round(v).toLocaleString('en-US');
-      svg.appendChild(t);
-    });
-    // x ticks; on a numeric axis, labels that would overlap are dropped
-    let lastTick = -Infinity;
-    for (const c of xs) {
-      if (numeric && X(c) - lastTick < 30) continue;
-      lastTick = X(c);
-      const t = svgEl('text', { class: 'tick', x: X(c), y: T + ph + 20, 'text-anchor': 'middle' });
-      t.textContent = numeric ? Math.round(c) : c;
-      svg.appendChild(t);
-    }
-
-    const cross = svgEl('line', { class: 'cross', y1: T, y2: T + ph, x1: L, x2: L, opacity: 0 });
-    svg.appendChild(cross);
-
-    // series
-    for (const s of series) {
-      const pts = s.levels.filter(l => pick(l) != null);
-      if (!pts.length) continue;
-      const attrs = {
-        class: 'ser', stroke: s.color,
-        points: pts.map(l => `${X(l[xKey])},${Y(pick(l))}`).join(' '),
-      };
-      if (s.dash) attrs['stroke-dasharray'] = '6 5';
-      svg.appendChild(svgEl('polyline', attrs));
-      for (const l of pts) {
-        svg.appendChild(svgEl('circle', {
-          class: 'ring', cx: X(l[xKey]), cy: Y(pick(l)), r: s.dash ? 3 : 4.5, fill: s.color,
-        }));
-      }
-    }
-
-    // direct end labels, skipped entirely if any two would collide
-    const ends = series
-      .map(s => { const p = s.levels.filter(l => pick(l) != null).pop(); return p ? { s, p } : null; })
-      .filter(Boolean)
-      .sort((a, b) => Y(pick(a.p)) - Y(pick(b.p)));
-    const collide = ends.some((e, i) => i > 0 && Math.abs(Y(pick(e.p)) - Y(pick(ends[i - 1].p))) < 14);
-    if (!collide && !narrow) {
-      for (const e of ends) {
-        const x = X(e.p[xKey]), y = Y(pick(e.p));
-        svg.appendChild(svgEl('circle', { cx: x + 12, cy: y - 3, r: 3.5, fill: e.s.color }));
-        const t = svgEl('text', { class: 'endlab', x: x + 20, y: y });
-        t.textContent = fmtVal(pick(e.p));
-        svg.appendChild(t);
-      }
-    }
-
-    // crosshair hit layer
-    const hit = svgEl('rect', { class: 'hit', x: L, y: T, width: pw, height: ph, tabindex: 0 });
-    svg.appendChild(hit);
-    let idx = -1;
-    const place = (i, ev) => {
-      idx = i;
-      const c = xs[i];
-      cross.setAttribute('x1', X(c));
-      cross.setAttribute('x2', X(c));
-      cross.setAttribute('opacity', 1);
-      const rows = [];
-      for (const s of series) {
-        const l = s.levels.find(l => l[xKey] === c);
-        if (l && pick(l) != null) rows.push({ color: s.color, label: s.label, value: fmtVal(pick(l)) });
-      }
-      showRowsTip(ev, xTitle(c), rows);
-    };
-    hit.addEventListener('pointermove', (ev) => {
-      const box = svg.getBoundingClientRect();
-      const rel = (ev.clientX - box.left) / box.width * W;
-      let best = 0, bd = Infinity;
-      xs.forEach((c, i) => { const d = Math.abs(X(c) - rel); if (d < bd) { bd = d; best = i; } });
-      place(best, ev);
-    });
-    hit.addEventListener('pointerleave', () => { cross.setAttribute('opacity', 0); hideTip(); });
-    hit.addEventListener('focus', () => {
-      const box = svg.getBoundingClientRect();
-      place(0, { clientX: box.left + 60, clientY: box.top + 40 });
-    });
-    hit.addEventListener('blur', () => { cross.setAttribute('opacity', 0); hideTip(); });
-    hit.addEventListener('keydown', (ev) => {
-      if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
-      ev.preventDefault();
-      const box = svg.getBoundingClientRect();
-      const next = Math.min(xs.length - 1, Math.max(0, (idx < 0 ? 0 : idx) + (ev.key === 'ArrowRight' ? 1 : -1)));
-      place(next, { clientX: box.left + (X(xs[next]) / W) * box.width, clientY: box.top + 40 });
-    });
-  }
 
   // Dimension filters. Keys come from the data, so a new --dim tag in bench.py
   // shows up here without touching this file. `model` is excluded: the filter
@@ -1008,18 +540,7 @@
     }
     const charted = list.slice(0, MAX_SERIES);
 
-    const lg = $('legendSweep');
-    lg.innerHTML = '';
-    for (const s of charted) {
-      const li = document.createElement('li');
-      const sw = document.createElement('span');
-      sw.className = 'swatch';
-      sw.style.background = s.color;
-      const tx = document.createElement('span');
-      tx.textContent = s.label;
-      li.append(sw, tx);
-      lg.appendChild(li);
-    }
+    Charts.legend($('legendSweep'), charted);
 
     drawLine($('chartTput'), charted, l => l.total_tok_s, v => Math.round(v).toLocaleString('en-US') + ' tok/s');
     drawLine($('chartTtft'), charted, l => l.ttft_p95_s, v => v.toFixed(2) + ' s');
@@ -1298,18 +819,7 @@
     section.hidden = !list.length;
     if (!list.length) return;
 
-    const lg = $('legendLoop');
-    lg.innerHTML = '';
-    for (const l of list) {
-      const li = document.createElement('li');
-      const sw = document.createElement('span');
-      sw.className = 'swatch';
-      sw.style.background = l.color;
-      const tx = document.createElement('span');
-      tx.textContent = l.label;
-      li.append(sw, tx);
-      lg.appendChild(li);
-    }
+    Charts.legend($('legendLoop'), list);
 
     const series = [];
     for (const l of list) {
@@ -1359,72 +869,6 @@
     }
   }
 
-  // --- video generation ---------------------------------------------------
-  // One series per configuration; x is clip length. A level that hit OOM has
-  // no timing and is left off the charts but kept in the table.
-  const videos = (data.videos || []).map((v, i) => ({ ...v, color: SWEEP_COLORS[i % SWEEP_COLORS.length] }));
-
-  function renderVideos(filter) {
-    const section = $('videoSection');
-    const list = videos.filter(v => filter === 'all' || v.model === filter);
-    section.hidden = !list.length;
-    if (!list.length) return;
-
-    const lg = $('legendVideo');
-    lg.innerHTML = '';
-    for (const v of list) {
-      const li = document.createElement('li');
-      const sw = document.createElement('span');
-      sw.className = 'swatch';
-      sw.style.background = v.color;
-      const tx = document.createElement('span');
-      tx.textContent = v.label;
-      li.append(sw, tx);
-      lg.appendChild(li);
-    }
-
-    const series = list.map(v => ({ label: v.label, color: v.color, levels: v.levels }));
-    const xTitle = (sec) => {
-      const lv = series.map(s => s.levels.find(l => l.seconds === sec)).find(Boolean);
-      return sec + ' s of video' + (lv ? ' · ' + lv.frames + ' frames' : '');
-    };
-    drawLine($('chartVideoWall'), series, l => l.status === 'ok' ? l.wall_s : null,
-      v => v >= 100 ? Math.round(v) + ' s' : v.toFixed(1) + ' s', { xKey: 'seconds', xTitle, log: true, xNumeric: true });
-    drawLine($('chartVideoVram'), series, l => l.peak_vram_gb != null ? l.peak_vram_gb : null,
-      v => v.toFixed(1) + ' GB', { xKey: 'seconds', xTitle, xNumeric: true });
-
-    const tb = $('videoBody');
-    tb.innerHTML = '';
-    for (const v of list) {
-      for (const l of v.levels) {
-        const tr = document.createElement('tr');
-        const first = document.createElement('td');
-        const dot = document.createElement('span');
-        dot.className = 'dot';
-        dot.style.background = v.color;
-        first.append(dot, document.createTextNode(v.label));
-        tr.appendChild(first);
-        const ok = l.status === 'ok';
-        const cells = [
-          l.frames,
-          l.seconds.toFixed(1) + ' s',
-          ok ? l.wall_s.toFixed(1) + ' s' : '—',
-          ok && l.s_per_step != null ? l.s_per_step.toFixed(2) + ' s' : '—',
-          ok && l.decode_s != null ? l.decode_s.toFixed(1) + ' s' : '—',
-          ok ? l.video_s_per_min.toFixed(2) : '—',
-          l.peak_vram_gb != null ? l.peak_vram_gb.toFixed(1) + ' GB' : '—',
-          l.status,
-        ];
-        for (const c of cells) {
-          const td = document.createElement('td');
-          td.textContent = c;
-          tr.appendChild(td);
-        }
-        tb.appendChild(tr);
-      }
-    }
-  }
-
   // --- render + filter ----------------------------------------------------
   function render(filter) {
     const list = filter === 'all' ? runs : runs.filter(r => r.model === filter);
@@ -1442,7 +886,6 @@
     renderDivergence(filter);
     renderToolcalls(filter);
     renderLoops(filter);
-    renderVideos(filter);
   }
 
   // Model chips come from every section's data, so a model that only has a
@@ -1454,7 +897,6 @@
     ...(data.jitter || []).map(j => j.model),
     ...(data.toolcalls || []).map(t => t.model),
     ...(data.loops || []).map(l => l.model),
-    ...(data.videos || []).map(v => v.model),
   ].filter(Boolean))];
   for (const m of allModels) {
     const b = document.createElement('button');
@@ -1486,7 +928,7 @@
   let resizeTimer;
   addEventListener('resize', () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => { hideTip(); renderSweeps(currentModelFilter); renderLoops(currentModelFilter); renderVideos(currentModelFilter); }, 150);
+    resizeTimer = setTimeout(() => { hideTip(); renderSweeps(currentModelFilter); renderLoops(currentModelFilter); }, 150);
   });
 
   const f = $('footer');

@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Video generation on one RTX 5090 — benchmark results</title>
+<link rel="preload" href="video.json" as="fetch" crossorigin="anonymous">
+<link rel="stylesheet" href="style.css">
+<script src="charts.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <nav class="pages" aria-label="Result pages"><a href="./">LLM serving</a><span class="sep"></span><span>Video generation</span></nav>
+    <h1>Video generation on one RTX 5090</h1>
+    <p>Text-to-video diffusion models through <code>diffusers</code> on the same 32 GiB
+       Blackwell card. One fixed prompt and seed, the clip made longer and longer until the
+       memory runs out. Nothing here judges the pictures; it answers how long a clip costs
+       and how long a clip fits.</p>
+    <div class="meta" id="meta"></div>
+  </header>
+
+  <div id="content" hidden>
+    <div class="card">
+      <div class="hero">
+        <div class="stat">
+          <div class="label">Fastest generation</div>
+          <div class="value" id="heroFast">—</div>
+          <div class="note" id="heroFastNote"></div>
+        </div>
+        <div class="stat">
+          <div class="label">Longest clip that fit</div>
+          <div class="value" id="heroLong">—</div>
+          <div class="note" id="heroLongNote"></div>
+        </div>
+        <div class="stat">
+          <div class="label">Clips measured</div>
+          <div class="value" id="heroCount">—</div>
+          <div class="note" id="heroCountNote"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters" role="group" aria-label="Filter by model" id="modelFilters">
+      <span class="lab">Model</span>
+      <button class="chip" data-filter="all" aria-pressed="true">All</button>
+    </div>
+
+    <div class="card" id="videoSection">
+      <h2>Clip length sweeps</h2>
+      <p class="sub">Each configuration is one model at one resolution and frame rate, run
+        at clip lengths of growing size. The prompt is encoded once and the text encoder
+        freed before the generator loads, so every clip is measured from denoise start to
+        file written. Produced by <code>video.py</code>.</p>
+      <p class="note-inline">Colours identify <em>configurations</em>, not models. The x axis
+        is clip length in seconds of video.</p>
+      <div class="dimbar" id="dimbar" role="group" aria-label="Filter sweeps by dimension"></div>
+      <p class="capnote" id="capnote" hidden></p>
+      <ul class="legend" id="legendVideo"></ul>
+
+      <h3 style="font-size:13px;margin:22px 0 2px">Wall time per clip</h3>
+      <p class="sub">Denoising plus VAE decode, prompt already encoded. Lower is better; log
+        scale, because the fast tier and the 50-step models are two orders of magnitude apart.
+        The curves bend upward because attention cost grows faster than the frame count.</p>
+      <svg class="linechart" id="chartVideoWall" viewBox="0 0 880 300" role="img"></svg>
+      <div class="axname">seconds of video</div>
+
+      <h3 style="font-size:13px;margin:26px 0 2px">Seconds of video per wall minute</h3>
+      <p class="sub">The same clips as a rate. Above 60 is faster than real time.</p>
+      <svg class="linechart" id="chartVideoRate" viewBox="0 0 880 300" role="img"></svg>
+      <div class="axname">seconds of video</div>
+
+      <h3 style="font-size:13px;margin:26px 0 2px">Peak VRAM</h3>
+      <p class="sub">Peak allocated during the clip, weights included. A clip that ran out
+        of memory has no point here but keeps its row in the table.</p>
+      <svg class="linechart" id="chartVideoVram" viewBox="0 0 880 300" role="img"></svg>
+      <div class="axname">seconds of video</div>
+
+      <h3 style="font-size:13px;margin:26px 0 10px">Every clip</h3>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Configuration</th>
+              <th scope="col">Frames</th>
+              <th scope="col">Clip</th>
+              <th scope="col">Wall</th>
+              <th scope="col">Per step</th>
+              <th scope="col">Decode</th>
+              <th scope="col">Video s / min</th>
+              <th scope="col">Peak VRAM</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody id="videoBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Configurations</h2>
+      <p class="sub">What each sweep ran: the model, its shape, and how it was loaded.</p>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Configuration</th>
+              <th scope="col">Repository</th>
+              <th scope="col">Size</th>
+              <th scope="col">fps</th>
+              <th scope="col">Steps</th>
+              <th scope="col">Guidance</th>
+              <th scope="col">VAE tiling</th>
+              <th scope="col">Load</th>
+              <th scope="col">Encode</th>
+              <th scope="col">Longest fit</th>
+            </tr>
+          </thead>
+          <tbody id="cfgBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <footer id="footer"></footer>
+  </div>
+
+  <div class="card" id="loading">Loading <code>video.json</code>…</div>
+</div>
+
+<div id="tip" role="status" aria-live="polite"></div>
+
+<script>
+(async function () {
+  const $ = (id) => document.getElementById(id);
+  const fmt = (n) => n.toLocaleString('en-US');
+  const { hideTip, drawLine } = Charts;
+
+  let data;
+  try {
+    const res = await fetch('video.json', { cache: 'no-cache' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    data = await res.json();
+  } catch (e) {
+    $('loading').innerHTML = '';
+    const p = document.createElement('p');
+    p.className = 'err';
+    p.textContent = 'Could not load video.json: ' + e.message;
+    const q = document.createElement('p');
+    q.style.color = 'var(--text-secondary)';
+    q.textContent = 'Opening this file directly from disk blocks the fetch. Serve the directory instead, e.g. python3 -m http.server 8080 --directory docs';
+    $('loading').append(p, q);
+    return;
+  }
+
+  $('loading').hidden = true;
+  $('content').hidden = false;
+
+  // Configurations take the categorical slots in fixed order, never cycled:
+  // a 9th sweep needs faceting, not a generated hue.
+  const COLORS = Charts.SERIES;
+  const MAX_SERIES = COLORS.length;
+  const videos = (data.videos || []).map((v, i) => ({ ...v, color: COLORS[i % COLORS.length] }));
+  const okLevels = (v) => v.levels.filter(l => l.status === 'ok');
+
+  // --- meta line -----------------------------------------------------------
+  // The header block is optional (video.py creates a bare file); each entry
+  // carries the versions it ran with, so the line can be built from those.
+  const hw = data.hardware || {}, sw = data.software || {};
+  const uniq = (xs) => [...new Set(xs.filter(Boolean))].join(' / ');
+  for (const t of [hw.gpu || uniq(videos.map(v => v.gpu)), hw.arch,
+                   hw.vram_usable_gib && hw.vram_usable_gib + ' GiB usable',
+                   'diffusers ' + (sw.diffusers || uniq(videos.map(v => v.diffusers))),
+                   'torch ' + (sw.torch || uniq(videos.map(v => v.torch))),
+                   hw.runtime, data.generated || uniq(videos.map(v => v.generated))]) {
+    if (!t) continue;
+    const s = document.createElement('span');
+    s.textContent = t;
+    $('meta').appendChild(s);
+  }
+
+  // --- hero ---------------------------------------------------------------
+  const clips = videos.flatMap(v => v.levels.map(l => ({ v, l })));
+  const okClips = clips.filter(c => c.l.status === 'ok');
+  if (okClips.length) {
+    const fast = okClips.slice().sort((a, b) => b.l.video_s_per_min - a.l.video_s_per_min)[0];
+    $('heroFast').textContent = fast.l.video_s_per_min.toFixed(0) + ' s/min';
+    $('heroFastNote').textContent = 'seconds of video per wall minute · ' + fast.v.label +
+      ' · ' + fast.l.seconds.toFixed(1) + ' s clip in ' + fast.l.wall_s.toFixed(1) + ' s';
+    const long = okClips.slice().sort((a, b) => b.l.seconds - a.l.seconds || a.l.wall_s - b.l.wall_s)[0];
+    $('heroLong').textContent = long.l.seconds.toFixed(1) + ' s';
+    $('heroLongNote').textContent = long.v.label + ' · ' + long.l.frames + ' frames · ' +
+      long.l.peak_vram_gb.toFixed(1) + ' GB peak';
+  }
+  $('heroCount').textContent = fmt(clips.length);
+  $('heroCountNote').textContent = videos.length + ' configuration' + (videos.length === 1 ? '' : 's') +
+    ' · ' + (clips.length - okClips.length) + ' ran out of memory';
+
+  // --- dimension filters --------------------------------------------------
+  // Keys come from the data (--dim tags plus the shape video.py records), so a
+  // new tag shows up here without touching this file. `model` is excluded: the
+  // chip row at the top scopes it.
+  const DIM_ORDER = ['variant', 'res', 'steps'];
+  const DIM_LABEL = { variant: 'Tier', res: 'Size', steps: 'Steps' };
+  const dimKeys = DIM_ORDER.filter(k => videos.some(v => v.dimensions && v.dimensions[k] != null));
+  const dimState = Object.fromEntries(dimKeys.map(k => [k, 'all']));
+
+  function buildDimBar() {
+    const bar = $('dimbar');
+    bar.innerHTML = '';
+    for (const k of dimKeys) {
+      const vals = [...new Set(videos.map(v => v.dimensions[k]).filter(v => v != null))]
+        .sort((a, b) => (parseFloat(a) - parseFloat(b)) || String(a).localeCompare(String(b)));
+      if (vals.length < 2) continue;   // a dimension with one value filters nothing
+      const g = document.createElement('div');
+      g.className = 'dimgroup';
+      const lab = document.createElement('span');
+      lab.className = 'glab';
+      lab.textContent = DIM_LABEL[k] || k;
+      g.appendChild(lab);
+      for (const v of ['all', ...vals]) {
+        const b = document.createElement('button');
+        b.className = 'chip';
+        b.type = 'button';
+        b.textContent = v === 'all' ? 'All' : v;
+        b.setAttribute('aria-pressed', String(dimState[k] === v));
+        b.setAttribute('aria-label', `${DIM_LABEL[k] || k}: ${v}`);
+        b.addEventListener('click', () => {
+          dimState[k] = v;
+          for (const sib of g.querySelectorAll('.chip')) sib.setAttribute('aria-pressed', String(sib === b));
+          hideTip();
+          render(currentModelFilter);
+        });
+        g.appendChild(b);
+      }
+      bar.appendChild(g);
+    }
+  }
+
+  // --- the sweeps ---------------------------------------------------------
+  // One series per configuration; x is clip length. A level that hit OOM has
+  // no timing and is left off the charts but kept in the table.
+  function render(filter) {
+    const list = videos.filter(v =>
+      (filter === 'all' || v.model === filter) &&
+      dimKeys.every(k => dimState[k] === 'all' || (v.dimensions && v.dimensions[k] === dimState[k])));
+
+    const note = $('capnote');
+    if (!list.length) {
+      note.hidden = false;
+      note.textContent = 'No sweep matches these filters.';
+      $('legendVideo').innerHTML = '';
+      for (const id of ['chartVideoWall', 'chartVideoRate', 'chartVideoVram']) $(id).innerHTML = '';
+      $('videoBody').innerHTML = '';
+      $('cfgBody').innerHTML = '';
+      return;
+    }
+    if (list.length > MAX_SERIES) {
+      note.hidden = false;
+      note.textContent = `Showing ${MAX_SERIES} of ${list.length} sweeps — the palette holds ` +
+        `${MAX_SERIES} distinct colours. Narrow the filters to see the rest; all of them are in the table.`;
+    } else {
+      note.hidden = true;
+    }
+    const charted = list.slice(0, MAX_SERIES);
+    Charts.legend($('legendVideo'), charted);
+
+    const series = charted.map(v => ({ label: v.label, color: v.color, levels: v.levels }));
+    const xTitle = (sec) => {
+      const lv = series.map(s => s.levels.find(l => l.seconds === sec)).find(Boolean);
+      return sec + ' s of video' + (lv ? ' · ' + lv.frames + ' frames' : '');
+    };
+    const ok = (l) => l.status === 'ok';
+    drawLine($('chartVideoWall'), series, l => ok(l) ? l.wall_s : null,
+      v => v >= 100 ? Math.round(v) + ' s' : v.toFixed(1) + ' s', { xKey: 'seconds', xTitle, log: true, xNumeric: true });
+    drawLine($('chartVideoRate'), series, l => ok(l) ? l.video_s_per_min : null,
+      v => v >= 10 ? Math.round(v) + ' s/min' : v.toFixed(1) + ' s/min', { xKey: 'seconds', xTitle, log: true, xNumeric: true });
+    drawLine($('chartVideoVram'), series, l => l.peak_vram_gb != null ? l.peak_vram_gb : null,
+      v => v.toFixed(1) + ' GB', { xKey: 'seconds', xTitle, xNumeric: true });
+
+    const tb = $('videoBody');
+    tb.innerHTML = '';
+    for (const v of list) {
+      for (const l of v.levels) {
+        const tr = document.createElement('tr');
+        const first = document.createElement('td');
+        const dot = document.createElement('span');
+        dot.className = 'dot';
+        dot.style.background = v.color;
+        first.append(dot, document.createTextNode(v.label));
+        tr.appendChild(first);
+        const good = ok(l);
+        const cells = [
+          l.frames,
+          l.seconds.toFixed(1) + ' s',
+          good ? l.wall_s.toFixed(1) + ' s' : '—',
+          good && l.s_per_step != null ? l.s_per_step.toFixed(2) + ' s' : '—',
+          good && l.decode_s != null ? l.decode_s.toFixed(1) + ' s' : '—',
+          good ? l.video_s_per_min.toFixed(2) : '—',
+          l.peak_vram_gb != null ? l.peak_vram_gb.toFixed(1) + ' GB' : '—',
+          l.status,
+        ];
+        for (const c of cells) {
+          const td = document.createElement('td');
+          td.textContent = c;
+          tr.appendChild(td);
+        }
+        tb.appendChild(tr);
+      }
+    }
+
+    const cb = $('cfgBody');
+    cb.innerHTML = '';
+    for (const v of list) {
+      const w = v.workload || {};
+      const fit = okLevels(v).slice().sort((a, b) => b.seconds - a.seconds)[0];
+      const tr = document.createElement('tr');
+      const first = document.createElement('td');
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.style.background = v.color;
+      first.append(dot, document.createTextNode(v.label));
+      if (v.notes) {
+        const sm = document.createElement('span');
+        sm.className = 'sm';
+        sm.textContent = v.notes;
+        first.appendChild(sm);
+      }
+      tr.appendChild(first);
+      const cells = [
+        v.repo || '—',
+        w.width && w.height ? w.width + '×' + w.height : '—',
+        w.fps != null ? w.fps : '—',
+        w.steps != null ? w.steps : '—',
+        w.guidance != null ? w.guidance : '—',
+        v.vae_tiling == null ? '—' : v.vae_tiling ? 'on' : 'off',
+        v.load_s != null ? v.load_s.toFixed(1) + ' s' : '—',
+        v.encode_s != null ? v.encode_s.toFixed(1) + ' s' : '—',
+        fit ? fit.seconds.toFixed(1) + ' s' : 'none',
+      ];
+      for (const c of cells) {
+        const td = document.createElement('td');
+        td.textContent = c;
+        tr.appendChild(td);
+      }
+      cb.appendChild(tr);
+    }
+  }
+
+  // --- model chips --------------------------------------------------------
+  const allModels = [...new Set(videos.map(v => v.model).filter(Boolean))];
+  for (const m of allModels) {
+    const b = document.createElement('button');
+    b.className = 'chip';
+    b.type = 'button';
+    b.dataset.filter = m;
+    b.setAttribute('aria-pressed', 'false');
+    b.textContent = m;
+    $('modelFilters').appendChild(b);
+  }
+
+  let currentModelFilter = 'all';
+  for (const btn of document.querySelectorAll('.filters .chip')) {
+    btn.addEventListener('click', () => {
+      for (const b of document.querySelectorAll('.filters .chip')) {
+        b.setAttribute('aria-pressed', String(b === btn));
+      }
+      hideTip();
+      currentModelFilter = btn.dataset.filter;
+      render(currentModelFilter);
+    });
+  }
+  buildDimBar();
+  render('all');
+
+  // The line charts are sized in real pixels, so they need redrawing when the
+  // viewport changes. Debounced.
+  let resizeTimer;
+  addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { hideTip(); render(currentModelFilter); }, 150);
+  });
+
+  const m = data.method || {};
+  $('footer').textContent = [m.workload, m.warmup].filter(Boolean).join(' · ') + (m.workload ? '.' : '');
+})();
+</script>
+</body>
+</html>

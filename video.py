@@ -14,7 +14,10 @@ clips land in video/out/ for eyeballing, and that is as far as it goes.
 
   ./video.sh --model wan2.2-5b                              # default sweep
   ./video.sh --model wan2.2-5b --frames 49,121,241 --steps 20
-  ./video.sh --model ltx-2.5 --label "ltx-2.5 distilled 960x544" --out docs/results.json
+  ./video.sh --model ltx-2.5 --label "ltx-2.5 distilled 960x544" --out docs/video.json
+
+Results merge into docs/video.json (the video page's data), not the LLM
+serving results in docs/results.json.
 """
 
 import argparse
@@ -290,7 +293,7 @@ MODELS = {
 
 
 def merge_into(path, entry):
-    """Add or replace this entry in a results.json, keyed by label."""
+    """Add or replace this entry in a video.json, keyed by label."""
     try:
         with open(path) as f:
             doc = json.load(f)
@@ -405,7 +408,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--model", required=True, choices=sorted(MODELS))
-    ap.add_argument("--label", default=None, help="results.json key; default: the model name")
+    ap.add_argument("--label", default=None, help="video.json key; default: the model name")
     ap.add_argument("--frames", default=None, help="comma list; default per model")
     ap.add_argument("--size", default=None, help="WxH; default per model")
     ap.add_argument("--steps", type=int, default=None)
@@ -420,7 +423,7 @@ def main():
     ap.add_argument("--no-vae-tiling", action="store_true",
                     help="decode the whole clip in one VAE pass instead of spatial tiles")
     ap.add_argument("--no-warmup", action="store_true")
-    ap.add_argument("--out", default=None, help="merge into this results.json")
+    ap.add_argument("--out", default=None, help="merge into this video.json (docs/video.json for the page)")
     ap.add_argument("--out-dir", default="video/out")
     ap.add_argument("--notes", default=None)
     ap.add_argument("--dim", action="append", metavar="KEY=VALUE",
