@@ -22,8 +22,17 @@ Two subcommands, both stdlib-only:
           contribution is a number rather than an assumption. Output length is
           fixed with ignore_eos, as in bench.py, so runs are comparable.
 
+          With --profile the transcript is not synthetic: it replays a real
+          session from docs/usage.json (built by usage.py from Claude Code
+          telemetry), turn by turn -- each turn's context size and output
+          length as they were, with filler standing in for the text. Turns
+          whose context does not fit the server's window are skipped and
+          counted, because that too is a result.
+
   ./agentic.py tools --out docs/results.json --label "qwen3.6-35b-a3b"
   ./agentic.py loop  --out docs/results.json --label "qwen3.6-35b-a3b" --agents 1,4
+  ./agentic.py loop  --out docs/results.json --label "qwen3.6-35b-a3b · typical session" \\
+                     --profile docs/usage.json --session typical --agents 1
 """
 
 import argparse
@@ -556,41 +565,143 @@ def run_agent(base_url, model, agent, turns, system_words, tool_words, output_to
     return rows
 
 
-def run_level(base_url, model, agents, mode, args):
+# ---------------------------------------------------------------- profile replay
+
+def load_profile(path, name):
+    with open(path) as f:
+        doc = json.load(f)
+    try:
+        session = doc["replay"][name]
+    except KeyError:
+        raise SystemExit(f"agentic.py: {path} has no replay session {name!r}; "
+                         f"has {', '.join(doc.get('replay', {}))}")
+    return doc, session
+
+
+def plan_turns(session, max_model_len, max_turns=None):
+    """Which of the session's turns fit the server. A turn needs its context
+    plus its output inside the window; one that does not is skipped, and the
+    skip is reported, since a window too small for real sessions is a finding."""
+    plan = []
+    for t in session["turns"][:max_turns]:
+        fits = max_model_len is None or t["context"] + t["output"] + 32 <= max_model_len
+        plan.append({**t, "fits": fits})
+    return plan
+
+
+def run_agent_profile(base_url, model, agent, plan, max_model_len, timeout, cold):
+    """Replay one agent through the planned turns. The conversation is rebuilt
+    the way the real one grew: the previous turn's answer becomes the assistant
+    message (filler of the same length), and a tool result of whatever size
+    reaches this turn's context. Tokens per filler word are calibrated from the
+    server's own prompt_tokens as the replay goes, so targets are hit within a
+    few percent after the first turn. A turn the window turns out not to hold
+    after all (the local tokenizer counts a little differently) is skipped and
+    reported like the ones the plan already excluded, not treated as an error."""
+    rows = []
+    tpw = 3.0                     # filler tokens per word; corrected from each response
+    msgs = None                   # the growing conversation, None until (re)started
+    known = 0                     # prompt_tokens the server reported for msgs as sent last time
+    pending_out = 0               # tokens of the answer to that, not yet in msgs
+    for t in plan:
+        if not t["fits"]:
+            msgs = None           # a later turn that fits starts over, like after compaction
+            continue
+        if msgs is not None and not t.get("reset") and max_model_len and \
+                known + pending_out + max(50, t["context"] - known - pending_out - 24) + t["output"] + 16 > max_model_len:
+            rows.append({"ok": False, "skipped": True, "turn": t["turn"]})
+            msgs = None
+            continue
+        salt = f"{agent}-{t['turn']}" if cold else None
+        if msgs is None or t.get("reset"):
+            # A fresh conversation whose one tool result carries the whole context
+            # (a compaction summary, a resumed transcript): start = system + task.
+            msgs = [{"role": "system", "content": build_system(600, salt)},
+                    {"role": "user", "content": f"Task {agent}: continue the work in this repository; "
+                                                f"the state so far is in the tool result."}]
+            known, pending_out = 0, 0
+            base = int(600 * tpw) + 40
+        else:
+            if cold:
+                msgs[0]["content"] = build_system(600, salt)
+            base = known
+        need = max(50, t["context"] - base - pending_out - 24)
+        call_id = f"call_{agent}_{t['turn']}"
+        msgs.append({"role": "assistant",
+                     "content": words(SYSTEM_BASE, max(1, int(pending_out / tpw))) if pending_out else "Continuing.",
+                     "tool_calls": [{"id": call_id, "type": "function",
+                                     "function": {"name": "read_file",
+                                                  "arguments": json.dumps({"path": f"src/step_{agent}_{t['turn']}.py"})}}]})
+        msgs.append({"role": "tool", "tool_call_id": call_id, "name": "read_file",
+                     "content": tool_output(agent, t["turn"], max(1, int(need / tpw)))})
+        r = one_turn(base_url, model, msgs, t["output"], timeout)
+        r["turn"] = t["turn"]
+        r["target_context"] = t["context"]
+        if not r["ok"] and "maximum context length" in r.get("error", ""):
+            rows.append({"ok": False, "skipped": True, "turn": t["turn"]})
+            msgs = None
+            continue
+        rows.append(r)
+        if not r["ok"]:
+            break
+        predicted = base + pending_out + need
+        if predicted > 0 and r["prompt_tokens"] > 0:
+            tpw = min(8.0, max(1.5, tpw * r["prompt_tokens"] / predicted))
+        known, pending_out = r["prompt_tokens"], r["output_tokens"]
+    return rows
+
+
+def run_level(base_url, model, agents, mode, args, plan=None):
     cold = mode == "cold"
     before = prefix_cache_counters(base_url)
     t0 = time.perf_counter()
     with ThreadPoolExecutor(max_workers=agents) as pool:
-        per_agent = list(pool.map(
-            lambda a: run_agent(base_url, model, a, args.turns, args.system_words,
-                                args.tool_words, args.output_tokens, args.timeout, cold),
-            range(1, agents + 1)))
+        if plan is not None:
+            per_agent = list(pool.map(
+                lambda a: run_agent_profile(args.base_url, model, a, plan, args.max_model_len, args.timeout, cold),
+                range(1, agents + 1)))
+        else:
+            per_agent = list(pool.map(
+                lambda a: run_agent(base_url, model, a, args.turns, args.system_words,
+                                    args.tool_words, args.output_tokens, args.timeout, cold),
+                range(1, agents + 1)))
     wall = time.perf_counter() - t0
     after = prefix_cache_counters(base_url)
 
+    turn_ids = [t["turn"] for t in plan if t["fits"]] if plan is not None else list(range(1, args.turns + 1))
     per_turn = []
-    for t in range(1, args.turns + 1):
-        rs = [rows[t - 1] for rows in per_agent if len(rows) >= t and rows[t - 1]["ok"]]
+    for t in turn_ids:
+        rs = [r for rows in per_agent for r in rows if r["turn"] == t and r["ok"]]
         if not rs:
-            break
-        per_turn.append({
+            if plan is None:
+                break
+            continue
+        row = {
             "turn": t,
             "context_tokens": rs[0]["prompt_tokens"],
             "ttft_p50_s": round(pct([r["ttft"] for r in rs], 50), 3),
             "ttft_max_s": round(max(r["ttft"] for r in rs), 3),
             "decode_tok_s_per_stream": round(statistics.median(
                 (r["output_tokens"] - 1) / (r["wall"] - r["ttft"]) for r in rs if r["wall"] > r["ttft"]), 1),
-        })
-    errors = [r["error"] for rows in per_agent for r in rows if not r["ok"]]
+        }
+        if plan is not None:
+            row["target_context"] = rs[0]["target_context"]
+            row["output_tokens"] = rs[0]["output_tokens"]
+        per_turn.append(row)
+    errors = [r["error"] for rows in per_agent for r in rows if not r["ok"] and not r.get("skipped")]
+    skipped = sum(1 for rows in per_agent for r in rows if r.get("skipped"))
     turns_ok = sum(1 for rows in per_agent for r in rows if r["ok"])
+    requested = agents * len(turn_ids) - skipped
     entry = {
         "agents": agents,
         "mode": mode,
-        "turns_requested": agents * args.turns,
+        "turns_requested": requested,
         "turns_ok": turns_ok,
-        "status": "ok" if turns_ok == agents * args.turns else ("partial" if turns_ok else "failed"),
+        "status": "ok" if turns_ok == requested else ("partial" if turns_ok else "failed"),
         "wall_s": round(wall, 2),
     }
+    if plan is not None:
+        entry["turns_over_window"] = agents * sum(1 for t in plan if not t["fits"]) + skipped
     if errors:
         entry["error"] = errors[0]
     if per_turn:
@@ -620,8 +731,21 @@ def cmd_loop(args):
     modes = ["warm", "cold"] if args.mode == "both" else [args.mode]
     print(f"server   {args.base_url}  vLLM {info.get('vllm_version', '?')}")
     print(f"model    {model}  (max_model_len {info.get('max_model_len', '?')})")
-    print(f"workload {args.turns} turns, ~{args.tool_words} words per tool result, "
-          f"{args.system_words}-word system prompt, exactly {args.output_tokens} output tokens per turn")
+    plan = None
+    args.max_model_len = info.get("max_model_len")
+    if args.profile:
+        doc, session = load_profile(args.profile, args.session)
+        plan = plan_turns(session, args.max_model_len, args.max_turns)
+        fits = sum(1 for t in plan if t["fits"])
+        ctxs = [t["context"] for t in plan]
+        print(f"workload {args.profile} · {args.session}: {len(plan)} real turns from a {session['minutes']}-minute "
+              f"session, context {min(ctxs)}..{max(ctxs)} tokens, {session['resets']} resets; "
+              f"{fits} fit this server's window, {len(plan) - fits} do not")
+        if not fits:
+            raise SystemExit("agentic.py: no turn of this session fits the server's max_model_len")
+    else:
+        print(f"workload {args.turns} turns, ~{args.tool_words} words per tool result, "
+              f"{args.system_words}-word system prompt, exactly {args.output_tokens} output tokens per turn")
     if prefix_cache_counters(args.base_url) is None:
         print("note     /metrics has no prefix-cache counters; hit rate will be missing")
     print()
@@ -638,7 +762,7 @@ def cmd_loop(args):
     levels = []
     for agents in agent_levels:
         for mode in modes:
-            e = run_level(args.base_url, model, agents, mode, args)
+            e = run_level(args.base_url, model, agents, mode, args, plan)
             levels.append(e)
             okstr = f"{e['turns_ok']}/{e['turns_requested']}"
             if e.get("per_turn"):
@@ -667,8 +791,21 @@ def cmd_loop(args):
             "thinking": False,
         },
         "levels": levels,
-        "dimensions": {"model": model, **parse_dims(args.dim)},
+        "dimensions": {"model": model, "shape": "synthetic", **parse_dims(args.dim)},
     }
+    if plan is not None:
+        entry["workload"] = {
+            "profile": args.profile,
+            "session": args.session,
+            "turns": len(plan),
+            "turns_in_window": sum(1 for t in plan if t["fits"]),
+            "context_min": min(t["context"] for t in plan),
+            "context_max": max(t["context"] for t in plan),
+            "output_tokens_p50": pct([t["output"] for t in plan], 50),
+            "ignore_eos": True,
+            "thinking": False,
+        }
+        entry["dimensions"]["shape"] = args.session
     if args.notes:
         entry["notes"] = args.notes
     if args.out:
@@ -711,6 +848,9 @@ def main():
     l.add_argument("--tool-words", type=int, default=400, help="words of code per tool result (~1.2K tokens)")
     l.add_argument("--system-words", type=int, default=600)
     l.add_argument("--output-tokens", type=int, default=128, help="generated per turn, exactly")
+    l.add_argument("--profile", help="replay a real session from this usage.json instead of the synthetic transcript")
+    l.add_argument("--session", default="typical", help="which replay session in the profile (default: typical)")
+    l.add_argument("--max-turns", type=int, help="replay only the first N turns of the session")
     l.set_defaults(func=cmd_loop)
 
     args = ap.parse_args()

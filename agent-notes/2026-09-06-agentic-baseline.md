@@ -11,7 +11,7 @@ The four configurations:
 | --- | --- | --- | ---: |
 | `qwen3.6-35b-a3b` | `qwen3.6-35b-a3b` | seqs 32, CUDA graphs | 370,189 |
 | `nemotron-3.5-lightning` | `nemotron-3.5-lightning` | seqs 32, CUDA graphs | 1,497,245 |
-| `qwen3.8-27b text-only, CUDA graphs` | `qwen3.8-27b` + `LIMIT_MM=0 ENFORCE_EAGER=0 MAX_NUM_SEQS=32` | vision off | 53,399 |
+| `qwen3.8-27b text-only, CUDA graphs` | `qwen3.8-27b` + `LANGUAGE_MODEL_ONLY=1 ENFORCE_EAGER=0 MAX_NUM_SEQS=32` | vision off | 53,399 |
 | `qwen3.8-27b default` | `qwen3.8-27b` | vision on, eager, seqs 8 | 60,681 |
 
 Neither test says anything about how *good* the model's decisions are. `tools`

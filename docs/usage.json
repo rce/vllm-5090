@@ -1,0 +1,2476 @@
+{
+ "schema_version": 1,
+ "generated": "2026-09-07",
+ "source": {
+  "description": "Claude Code on a work account, CloudWatch Logs Insights export, three days in September 2026",
+  "from": "2026-09-04",
+  "to": "2026-09-06",
+  "requests": 518,
+  "prompts": 108,
+  "tool_calls": 534,
+  "sessions": 6,
+  "session_rule": "gap > 30 min",
+  "models": {
+   "claude-fable-5-1": 506,
+   "claude-haiku-4-5-20251001": 12
+  }
+ },
+ "requests": {
+  "context": {
+   "n": 518,
+   "min": 905,
+   "p10": 38033,
+   "p50": 105344,
+   "p90": 223456,
+   "p99": 267315,
+   "max": 274585,
+   "mean": 117752.5,
+   "sum": 60995810
+  },
+  "fresh_prefill": {
+   "n": 518,
+   "min": 94,
+   "p10": 398,
+   "p50": 1154,
+   "p90": 6611,
+   "p99": 117360,
+   "max": 207111,
+   "mean": 4644.1,
+   "sum": 2405641
+  },
+  "cache_read": {
+   "n": 518,
+   "min": 0,
+   "p10": 35049,
+   "p50": 97600,
+   "p90": 221436,
+   "p99": 266726,
+   "max": 274193,
+   "mean": 113108.4,
+   "sum": 58590169
+  },
+  "output": {
+   "n": 518,
+   "min": 12,
+   "p10": 146,
+   "p50": 520,
+   "p90": 2235,
+   "p99": 8751,
+   "max": 14207,
+   "mean": 1027.7,
+   "sum": 532332
+  },
+  "duration_ms": {
+   "n": 518,
+   "min": 933,
+   "p10": 3682,
+   "p50": 9281,
+   "p90": 31318,
+   "p99": 93887,
+   "max": 175301,
+   "mean": 14416.1,
+   "sum": 7467558
+  },
+  "provider_output_tok_s": {
+   "n": 518,
+   "min": 8.7,
+   "p10": 32.5,
+   "p50": 61.3,
+   "p90": 86.5,
+   "p99": 110.7,
+   "max": 118.3,
+   "mean": 59.6,
+   "sum": 30898.7
+  },
+  "cache_share": 0.9606,
+  "cold_requests": 13,
+  "output_hist_log2": [
+   {
+    "from": 8,
+    "to": 15,
+    "n": 7
+   },
+   {
+    "from": 16,
+    "to": 31,
+    "n": 5
+   },
+   {
+    "from": 32,
+    "to": 63,
+    "n": 8
+   },
+   {
+    "from": 64,
+    "to": 127,
+    "n": 18
+   },
+   {
+    "from": 128,
+    "to": 255,
+    "n": 84
+   },
+   {
+    "from": 256,
+    "to": 511,
+    "n": 135
+   },
+   {
+    "from": 512,
+    "to": 1023,
+    "n": 131
+   },
+   {
+    "from": 1024,
+    "to": 2047,
+    "n": 65
+   },
+   {
+    "from": 2048,
+    "to": 4095,
+    "n": 42
+   },
+   {
+    "from": 4096,
+    "to": 8191,
+    "n": 16
+   },
+   {
+    "from": 8192,
+    "to": 16383,
+    "n": 7
+   }
+  ],
+  "context_hist_20k": [
+   {
+    "from": 0,
+    "to": 20000,
+    "n": 13
+   },
+   {
+    "from": 20000,
+    "to": 40000,
+    "n": 49
+   },
+   {
+    "from": 40000,
+    "to": 60000,
+    "n": 88
+   },
+   {
+    "from": 60000,
+    "to": 80000,
+    "n": 61
+   },
+   {
+    "from": 80000,
+    "to": 100000,
+    "n": 41
+   },
+   {
+    "from": 100000,
+    "to": 120000,
+    "n": 41
+   },
+   {
+    "from": 120000,
+    "to": 140000,
+    "n": 29
+   },
+   {
+    "from": 140000,
+    "to": 160000,
+    "n": 42
+   },
+   {
+    "from": 160000,
+    "to": 180000,
+    "n": 36
+   },
+   {
+    "from": 180000,
+    "to": 200000,
+    "n": 33
+   },
+   {
+    "from": 200000,
+    "to": 220000,
+    "n": 27
+   },
+   {
+    "from": 220000,
+    "to": 240000,
+    "n": 26
+   },
+   {
+    "from": 240000,
+    "to": 260000,
+    "n": 15
+   },
+   {
+    "from": 260000,
+    "to": 280000,
+    "n": 17
+   }
+  ]
+ },
+ "sessions": {
+  "requests": {
+   "n": 6,
+   "min": 6,
+   "p10": 9,
+   "p50": 65,
+   "p90": 185,
+   "p99": 198,
+   "max": 199,
+   "mean": 86.3,
+   "sum": 518
+  },
+  "minutes": {
+   "n": 6,
+   "min": 2.4,
+   "p10": 7.1,
+   "p50": 65.5,
+   "p90": 227.7,
+   "p99": 324.8,
+   "max": 335.5,
+   "mean": 100.1,
+   "sum": 600.6
+  },
+  "context_max": {
+   "n": 6,
+   "min": 43942,
+   "p10": 54820,
+   "p50": 157026,
+   "p90": 270644,
+   "p99": 274191,
+   "max": 274585,
+   "mean": 160830.3,
+   "sum": 964982
+  },
+  "list": [
+   {
+    "day": "2026-09-04",
+    "requests": 6,
+    "minutes": 11.7,
+    "context_first": 89269,
+    "context_max": 89269,
+    "context_last": 87727,
+    "output_total": 2154,
+    "resets": 0,
+    "parallel_turns": 0,
+    "models": {
+     "claude-fable-5-1": 6
+    }
+   },
+   {
+    "day": "2026-09-05",
+    "requests": 95,
+    "minutes": 112.5,
+    "context_first": 89018,
+    "context_max": 224783,
+    "context_last": 77619,
+    "output_total": 127703,
+    "resets": 7,
+    "parallel_turns": 8,
+    "models": {
+     "claude-fable-5-1": 94,
+     "claude-haiku-4-5-20251001": 1
+    }
+   },
+   {
+    "day": "2026-09-05",
+    "requests": 171,
+    "minutes": 119.9,
+    "context_first": 226360,
+    "context_max": 266704,
+    "context_last": 155962,
+    "output_total": 163770,
+    "resets": 13,
+    "parallel_turns": 16,
+    "models": {
+     "claude-fable-5-1": 167,
+     "claude-haiku-4-5-20251001": 4
+    }
+   },
+   {
+    "day": "2026-09-05",
+    "requests": 35,
+    "minutes": 18.5,
+    "context_first": 57978,
+    "context_max": 65699,
+    "context_last": 55834,
+    "output_total": 20525,
+    "resets": 2,
+    "parallel_turns": 8,
+    "models": {
+     "claude-fable-5-1": 33,
+     "claude-haiku-4-5-20251001": 2
+    }
+   },
+   {
+    "day": "2026-09-05",
+    "requests": 199,
+    "minutes": 335.5,
+    "context_first": 64988,
+    "context_max": 274585,
+    "context_last": 46592,
+    "output_total": 214758,
+    "resets": 10,
+    "parallel_turns": 10,
+    "models": {
+     "claude-fable-5-1": 195,
+     "claude-haiku-4-5-20251001": 4
+    }
+   },
+   {
+    "day": "2026-09-06",
+    "requests": 12,
+    "minutes": 2.4,
+    "context_first": 905,
+    "context_max": 43942,
+    "context_last": 43942,
+    "output_total": 3422,
+    "resets": 0,
+    "parallel_turns": 1,
+    "models": {
+     "claude-haiku-4-5-20251001": 1,
+     "claude-fable-5-1": 11
+    }
+   }
+  ]
+ },
+ "cadence": {
+  "gap_s": {
+   "n": 512,
+   "min": -70.2,
+   "p10": 0.0,
+   "p50": 3.2,
+   "p90": 127.8,
+   "p99": 1211.2,
+   "max": 1673.5,
+   "mean": 55.8,
+   "sum": 28565.8
+  },
+  "gap_hist": [
+   {
+    "bucket": "parallel",
+    "n": 43
+   },
+   {
+    "bucket": "<2s",
+    "n": 121
+   },
+   {
+    "bucket": "<10s",
+    "n": 165
+   },
+   {
+    "bucket": "<60s",
+    "n": 99
+   },
+   {
+    "bucket": "<5m",
+    "n": 66
+   },
+   {
+    "bucket": "5m+",
+    "n": 18
+   }
+  ],
+  "parallel_pairs": 43,
+  "in_flight_fraction": {
+   "n": 6,
+   "min": 0.08,
+   "p10": 0.11,
+   "p50": 0.3,
+   "p90": 0.33,
+   "p99": 0.35,
+   "max": 0.35,
+   "mean": 0.2,
+   "sum": 1.47
+  }
+ },
+ "growth": {
+  "context_delta_per_turn": {
+   "n": 480,
+   "min": -99437,
+   "p10": 356,
+   "p50": 1207,
+   "p90": 13660,
+   "p99": 169625,
+   "max": 191469,
+   "mean": 8880.6,
+   "sum": 4262692
+  },
+  "context_delta_positive": {
+   "n": 468,
+   "min": 62,
+   "p10": 404,
+   "p50": 1238,
+   "p90": 14356,
+   "p99": 169807,
+   "max": 191469,
+   "mean": 10215.1,
+   "sum": 4780678
+  }
+ },
+ "prompts": {
+  "chars": {
+   "n": 108,
+   "min": 6,
+   "p10": 15,
+   "p50": 100,
+   "p90": 291,
+   "p99": 400,
+   "max": 452,
+   "mean": 129.9,
+   "sum": 14031
+  },
+  "requests_per_prompt": {
+   "n": 108,
+   "min": 0,
+   "p10": 1,
+   "p50": 3,
+   "p90": 11,
+   "p99": 25,
+   "max": 26,
+   "mean": 4.8,
+   "sum": 518
+  },
+  "requests_per_prompt_hist": [
+   {
+    "bucket": "0",
+    "n": 8
+   },
+   {
+    "bucket": "1",
+    "n": 19
+   },
+   {
+    "bucket": "2-5",
+    "n": 45
+   },
+   {
+    "bucket": "6-20",
+    "n": 34
+   },
+   {
+    "bucket": "21+",
+    "n": 2
+   }
+  ]
+ },
+ "tools": [
+  {
+   "tool": "Bash",
+   "success": true,
+   "calls": 389,
+   "ms_p50": 383,
+   "ms_p90": 23324,
+   "ms_max": 120153
+  },
+  {
+   "tool": "Edit",
+   "success": true,
+   "calls": 48,
+   "ms_p50": 15,
+   "ms_p90": 20,
+   "ms_max": 40
+  },
+  {
+   "tool": "Write",
+   "success": true,
+   "calls": 39,
+   "ms_p50": 19,
+   "ms_p90": 29,
+   "ms_max": 36
+  },
+  {
+   "tool": "AskUserQuestion",
+   "success": true,
+   "calls": 18,
+   "ms_p50": 0,
+   "ms_p90": 0,
+   "ms_max": 1
+  },
+  {
+   "tool": "Read",
+   "success": true,
+   "calls": 16,
+   "ms_p50": 37,
+   "ms_p90": 46,
+   "ms_max": 288
+  },
+  {
+   "tool": "Bash",
+   "success": false,
+   "calls": 15,
+   "ms_p50": 247,
+   "ms_p90": 2183,
+   "ms_max": 20669
+  },
+  {
+   "tool": "Skill",
+   "success": true,
+   "calls": 7,
+   "ms_p50": 4,
+   "ms_p90": 14,
+   "ms_max": 18
+  },
+  {
+   "tool": "ToolSearch",
+   "success": true,
+   "calls": 1,
+   "ms_p50": 2,
+   "ms_p90": 2,
+   "ms_max": 2
+  },
+  {
+   "tool": "WebSearch",
+   "success": true,
+   "calls": 1,
+   "ms_p50": 16764,
+   "ms_p90": 16764,
+   "ms_max": 16764
+  }
+ ],
+ "replay": {
+  "typical": {
+   "name": "typical",
+   "day": "2026-09-05",
+   "requests": 35,
+   "minutes": 18.5,
+   "context_first": 57978,
+   "context_max": 65699,
+   "context_last": 55834,
+   "output_total": 20525,
+   "resets": 2,
+   "parallel_turns": 8,
+   "models": {
+    "claude-fable-5-1": 33,
+    "claude-haiku-4-5-20251001": 2
+   },
+   "turns": [
+    {
+     "turn": 1,
+     "context": 57978,
+     "fresh": 332,
+     "cache_read": 57646,
+     "output": 830
+    },
+    {
+     "turn": 2,
+     "context": 59129,
+     "fresh": 1153,
+     "cache_read": 57976,
+     "output": 247,
+     "gap_s": 1.6
+    },
+    {
+     "turn": 3,
+     "context": 59678,
+     "fresh": 581,
+     "cache_read": 59097,
+     "output": 169,
+     "gap_s": 122.2
+    },
+    {
+     "turn": 4,
+     "context": 59986,
+     "fresh": 340,
+     "cache_read": 59646,
+     "output": 383,
+     "gap_s": 7.8
+    },
+    {
+     "turn": 5,
+     "context": 60410,
+     "fresh": 456,
+     "cache_read": 59954,
+     "output": 476,
+     "gap_s": 3.5
+    },
+    {
+     "turn": 6,
+     "context": 61198,
+     "fresh": 820,
+     "cache_read": 60378,
+     "output": 1601,
+     "gap_s": 2.1
+    },
+    {
+     "turn": 7,
+     "context": 63120,
+     "fresh": 1954,
+     "cache_read": 61166,
+     "output": 204,
+     "gap_s": 5.7
+    },
+    {
+     "turn": 8,
+     "context": 63620,
+     "fresh": 532,
+     "cache_read": 63088,
+     "output": 670,
+     "gap_s": 1.4
+    },
+    {
+     "turn": 9,
+     "context": 974,
+     "fresh": 974,
+     "cache_read": 0,
+     "output": 12,
+     "gap_s": 112.2,
+     "reset": true
+    },
+    {
+     "turn": 10,
+     "context": 33953,
+     "fresh": 14704,
+     "cache_read": 19249,
+     "output": 251,
+     "gap_s": -1.0,
+     "parallel": true
+    },
+    {
+     "turn": 11,
+     "context": 35108,
+     "fresh": 1157,
+     "cache_read": 33951,
+     "output": 180,
+     "gap_s": 1.9
+    },
+    {
+     "turn": 12,
+     "context": 43405,
+     "fresh": 8329,
+     "cache_read": 35076,
+     "output": 252,
+     "gap_s": 0.0
+    },
+    {
+     "turn": 13,
+     "context": 49415,
+     "fresh": 6042,
+     "cache_read": 43373,
+     "output": 1739,
+     "gap_s": 0.1
+    },
+    {
+     "turn": 14,
+     "context": 51386,
+     "fresh": 2003,
+     "cache_read": 49383,
+     "output": 1024,
+     "gap_s": 109.7
+    },
+    {
+     "turn": 15,
+     "context": 54752,
+     "fresh": 3398,
+     "cache_read": 51354,
+     "output": 4908,
+     "gap_s": 0.1
+    },
+    {
+     "turn": 16,
+     "context": 919,
+     "fresh": 919,
+     "cache_read": 0,
+     "output": 12,
+     "gap_s": 9.4,
+     "reset": true
+    },
+    {
+     "turn": 17,
+     "context": 33987,
+     "fresh": 14738,
+     "cache_read": 19249,
+     "output": 261,
+     "gap_s": -1.2,
+     "parallel": true
+    },
+    {
+     "turn": 18,
+     "context": 60470,
+     "fresh": 5750,
+     "cache_read": 54720,
+     "output": 403,
+     "gap_s": -7.5,
+     "parallel": true
+    },
+    {
+     "turn": 19,
+     "context": 36543,
+     "fresh": 2558,
+     "cache_read": 33985,
+     "output": 256,
+     "gap_s": 1.6
+    },
+    {
+     "turn": 20,
+     "context": 61390,
+     "fresh": 952,
+     "cache_read": 60438,
+     "output": 162,
+     "gap_s": -2.1,
+     "parallel": true
+    },
+    {
+     "turn": 21,
+     "context": 43213,
+     "fresh": 6702,
+     "cache_read": 36511,
+     "output": 950,
+     "gap_s": -2.1,
+     "parallel": true
+    },
+    {
+     "turn": 22,
+     "context": 61948,
+     "fresh": 590,
+     "cache_read": 61358,
+     "output": 677,
+     "gap_s": -9.3,
+     "parallel": true
+    },
+    {
+     "turn": 23,
+     "context": 64293,
+     "fresh": 705,
+     "cache_read": 63588,
+     "output": 272,
+     "gap_s": -2.4,
+     "parallel": true
+    },
+    {
+     "turn": 24,
+     "context": 64770,
+     "fresh": 479,
+     "cache_read": 64291,
+     "output": 172,
+     "gap_s": 4.1
+    },
+    {
+     "turn": 25,
+     "context": 48486,
+     "fresh": 5305,
+     "cache_read": 43181,
+     "output": 2201,
+     "gap_s": -12.5,
+     "parallel": true
+    },
+    {
+     "turn": 26,
+     "context": 52665,
+     "fresh": 4211,
+     "cache_read": 48454,
+     "output": 158,
+     "gap_s": 2.4
+    },
+    {
+     "turn": 27,
+     "context": 54844,
+     "fresh": 2211,
+     "cache_read": 52633,
+     "output": 643,
+     "gap_s": 13.4
+    },
+    {
+     "turn": 28,
+     "context": 62629,
+     "fresh": 713,
+     "cache_read": 61916,
+     "output": 142,
+     "gap_s": 169.3
+    },
+    {
+     "turn": 29,
+     "context": 64188,
+     "fresh": 1561,
+     "cache_read": 62627,
+     "output": 409,
+     "gap_s": 3.7
+    },
+    {
+     "turn": 30,
+     "context": 64597,
+     "fresh": 441,
+     "cache_read": 64156,
+     "output": 158,
+     "gap_s": 180.7
+    },
+    {
+     "turn": 31,
+     "context": 65290,
+     "fresh": 695,
+     "cache_read": 64595,
+     "output": 106,
+     "gap_s": 3.4
+    },
+    {
+     "turn": 32,
+     "context": 65395,
+     "fresh": 137,
+     "cache_read": 65258,
+     "output": 220,
+     "gap_s": 10.4
+    },
+    {
+     "turn": 33,
+     "context": 65699,
+     "fresh": 306,
+     "cache_read": 65393,
+     "output": 50,
+     "gap_s": 2.3
+    },
+    {
+     "turn": 34,
+     "context": 55488,
+     "fresh": 676,
+     "cache_read": 54812,
+     "output": 248,
+     "gap_s": 43.7
+    },
+    {
+     "turn": 35,
+     "context": 55834,
+     "fresh": 348,
+     "cache_read": 55486,
+     "output": 79,
+     "gap_s": 4.2
+    }
+   ]
+  },
+  "heavy": {
+   "name": "heavy",
+   "day": "2026-09-05",
+   "requests": 199,
+   "minutes": 335.5,
+   "context_first": 64988,
+   "context_max": 274585,
+   "context_last": 46592,
+   "output_total": 214758,
+   "resets": 10,
+   "parallel_turns": 10,
+   "models": {
+    "claude-fable-5-1": 195,
+    "claude-haiku-4-5-20251001": 4
+   },
+   "turns": [
+    {
+     "turn": 1,
+     "context": 64988,
+     "fresh": 250,
+     "cache_read": 64738,
+     "output": 1739
+    },
+    {
+     "turn": 2,
+     "context": 67299,
+     "fresh": 2313,
+     "cache_read": 64986,
+     "output": 1219,
+     "gap_s": 2.0
+    },
+    {
+     "turn": 3,
+     "context": 68580,
+     "fresh": 1313,
+     "cache_read": 67267,
+     "output": 1387,
+     "gap_s": 173.7
+    },
+    {
+     "turn": 4,
+     "context": 55938,
+     "fresh": 136,
+     "cache_read": 55802,
+     "output": 202,
+     "gap_s": 21.6
+    },
+    {
+     "turn": 5,
+     "context": 70499,
+     "fresh": 1921,
+     "cache_read": 68578,
+     "output": 1861,
+     "gap_s": -25.1,
+     "parallel": true
+    },
+    {
+     "turn": 6,
+     "context": 56909,
+     "fresh": 973,
+     "cache_read": 55936,
+     "output": 398,
+     "gap_s": -2.1,
+     "parallel": true
+    },
+    {
+     "turn": 7,
+     "context": 58822,
+     "fresh": 1945,
+     "cache_read": 56877,
+     "output": 124,
+     "gap_s": 2.7
+    },
+    {
+     "turn": 8,
+     "context": 72414,
+     "fresh": 1947,
+     "cache_read": 70467,
+     "output": 1619,
+     "gap_s": 1246.9
+    },
+    {
+     "turn": 9,
+     "context": 74118,
+     "fresh": 1706,
+     "cache_read": 72412,
+     "output": 2252,
+     "gap_s": 183.2
+    },
+    {
+     "turn": 10,
+     "context": 76664,
+     "fresh": 2548,
+     "cache_read": 74116,
+     "output": 384,
+     "gap_s": 35.0
+    },
+    {
+     "turn": 11,
+     "context": 77578,
+     "fresh": 946,
+     "cache_read": 76632,
+     "output": 1155,
+     "gap_s": 2.0
+    },
+    {
+     "turn": 12,
+     "context": 79065,
+     "fresh": 1519,
+     "cache_read": 77546,
+     "output": 1134,
+     "gap_s": 2.1
+    },
+    {
+     "turn": 13,
+     "context": 80967,
+     "fresh": 1934,
+     "cache_read": 79033,
+     "output": 2228,
+     "gap_s": 2.0
+    },
+    {
+     "turn": 14,
+     "context": 83411,
+     "fresh": 2476,
+     "cache_read": 80935,
+     "output": 310,
+     "gap_s": 36.9
+    },
+    {
+     "turn": 15,
+     "context": 83903,
+     "fresh": 524,
+     "cache_read": 83379,
+     "output": 818,
+     "gap_s": 1.6
+    },
+    {
+     "turn": 16,
+     "context": 85329,
+     "fresh": 1458,
+     "cache_read": 83871,
+     "output": 853,
+     "gap_s": 3.1
+    },
+    {
+     "turn": 17,
+     "context": 86443,
+     "fresh": 1146,
+     "cache_read": 85297,
+     "output": 243,
+     "gap_s": 2.0
+    },
+    {
+     "turn": 18,
+     "context": 86751,
+     "fresh": 340,
+     "cache_read": 86411,
+     "output": 642,
+     "gap_s": 1.5
+    },
+    {
+     "turn": 19,
+     "context": 961,
+     "fresh": 961,
+     "cache_read": 0,
+     "output": 16,
+     "gap_s": 1523.6,
+     "reset": true
+    },
+    {
+     "turn": 20,
+     "context": 33996,
+     "fresh": 14747,
+     "cache_read": 19249,
+     "output": 279,
+     "gap_s": -1.0,
+     "parallel": true
+    },
+    {
+     "turn": 21,
+     "context": 34455,
+     "fresh": 461,
+     "cache_read": 33994,
+     "output": 223,
+     "gap_s": 2.1
+    },
+    {
+     "turn": 22,
+     "context": 34900,
+     "fresh": 477,
+     "cache_read": 34423,
+     "output": 578,
+     "gap_s": 0.2
+    },
+    {
+     "turn": 23,
+     "context": 35765,
+     "fresh": 897,
+     "cache_read": 34868,
+     "output": 1164,
+     "gap_s": 2.6
+    },
+    {
+     "turn": 24,
+     "context": 37099,
+     "fresh": 1366,
+     "cache_read": 35733,
+     "output": 890,
+     "gap_s": 1.9
+    },
+    {
+     "turn": 25,
+     "context": 38060,
+     "fresh": 993,
+     "cache_read": 37067,
+     "output": 1787,
+     "gap_s": 152.3
+    },
+    {
+     "turn": 26,
+     "context": 39965,
+     "fresh": 1907,
+     "cache_read": 38058,
+     "output": 502,
+     "gap_s": 15.2
+    },
+    {
+     "turn": 27,
+     "context": 40530,
+     "fresh": 597,
+     "cache_read": 39933,
+     "output": 867,
+     "gap_s": 58.1
+    },
+    {
+     "turn": 28,
+     "context": 41685,
+     "fresh": 1157,
+     "cache_read": 40528,
+     "output": 996,
+     "gap_s": 2.5
+    },
+    {
+     "turn": 29,
+     "context": 42730,
+     "fresh": 1077,
+     "cache_read": 41653,
+     "output": 1944,
+     "gap_s": 272.0
+    },
+    {
+     "turn": 30,
+     "context": 44830,
+     "fresh": 2102,
+     "cache_read": 42728,
+     "output": 2348,
+     "gap_s": 281.1
+    },
+    {
+     "turn": 31,
+     "context": 47231,
+     "fresh": 2403,
+     "cache_read": 44828,
+     "output": 985,
+     "gap_s": 215.7
+    },
+    {
+     "turn": 32,
+     "context": 48267,
+     "fresh": 1038,
+     "cache_read": 47229,
+     "output": 2720,
+     "gap_s": 392.5
+    },
+    {
+     "turn": 33,
+     "context": 51031,
+     "fresh": 2766,
+     "cache_read": 48265,
+     "output": 318,
+     "gap_s": 2.7
+    },
+    {
+     "turn": 34,
+     "context": 927,
+     "fresh": 927,
+     "cache_read": 0,
+     "output": 13,
+     "gap_s": 921.9,
+     "reset": true
+    },
+    {
+     "turn": 35,
+     "context": 29988,
+     "fresh": 10739,
+     "cache_read": 19249,
+     "output": 207,
+     "gap_s": -1.0,
+     "parallel": true
+    },
+    {
+     "turn": 36,
+     "context": 35061,
+     "fresh": 5075,
+     "cache_read": 29986,
+     "output": 206,
+     "gap_s": 1.9
+    },
+    {
+     "turn": 37,
+     "context": 36124,
+     "fresh": 1095,
+     "cache_read": 35029,
+     "output": 307,
+     "gap_s": 0.0
+    },
+    {
+     "turn": 38,
+     "context": 36598,
+     "fresh": 506,
+     "cache_read": 36092,
+     "output": 405,
+     "gap_s": 1.8
+    },
+    {
+     "turn": 39,
+     "context": 957,
+     "fresh": 957,
+     "cache_read": 0,
+     "output": 23,
+     "gap_s": 219.5,
+     "reset": true
+    },
+    {
+     "turn": 40,
+     "context": 34132,
+     "fresh": 14883,
+     "cache_read": 19249,
+     "output": 217,
+     "gap_s": -0.9,
+     "parallel": true
+    },
+    {
+     "turn": 41,
+     "context": 35247,
+     "fresh": 1117,
+     "cache_read": 34130,
+     "output": 240,
+     "gap_s": 0.1
+    },
+    {
+     "turn": 42,
+     "context": 44130,
+     "fresh": 8915,
+     "cache_read": 35215,
+     "output": 589,
+     "gap_s": 0.0
+    },
+    {
+     "turn": 43,
+     "context": 45079,
+     "fresh": 981,
+     "cache_read": 44098,
+     "output": 312,
+     "gap_s": 0.0
+    },
+    {
+     "turn": 44,
+     "context": 14112,
+     "fresh": 14112,
+     "cache_read": 0,
+     "output": 1229,
+     "gap_s": -0.1,
+     "reset": true,
+     "parallel": true
+    },
+    {
+     "turn": 45,
+     "context": 47335,
+     "fresh": 2288,
+     "cache_read": 45047,
+     "output": 2465,
+     "gap_s": 1.8
+    },
+    {
+     "turn": 46,
+     "context": 49984,
+     "fresh": 2681,
+     "cache_read": 47303,
+     "output": 2228,
+     "gap_s": 111.2
+    },
+    {
+     "turn": 47,
+     "context": 52506,
+     "fresh": 2554,
+     "cache_read": 49952,
+     "output": 1819,
+     "gap_s": 25.4
+    },
+    {
+     "turn": 48,
+     "context": 55007,
+     "fresh": 2533,
+     "cache_read": 52474,
+     "output": 589,
+     "gap_s": 1.9
+    },
+    {
+     "turn": 49,
+     "context": 56050,
+     "fresh": 1075,
+     "cache_read": 54975,
+     "output": 566,
+     "gap_s": 30.6
+    },
+    {
+     "turn": 50,
+     "context": 57643,
+     "fresh": 1595,
+     "cache_read": 56048,
+     "output": 737,
+     "gap_s": 38.8
+    },
+    {
+     "turn": 51,
+     "context": 58729,
+     "fresh": 1118,
+     "cache_read": 57611,
+     "output": 478,
+     "gap_s": 4.0
+    },
+    {
+     "turn": 52,
+     "context": 59363,
+     "fresh": 666,
+     "cache_read": 58697,
+     "output": 560,
+     "gap_s": 2.1
+    },
+    {
+     "turn": 53,
+     "context": 64045,
+     "fresh": 4714,
+     "cache_read": 59331,
+     "output": 218,
+     "gap_s": 730.9
+    },
+    {
+     "turn": 54,
+     "context": 64837,
+     "fresh": 794,
+     "cache_read": 64043,
+     "output": 464,
+     "gap_s": 5.6
+    },
+    {
+     "turn": 55,
+     "context": 77430,
+     "fresh": 12625,
+     "cache_read": 64805,
+     "output": 757,
+     "gap_s": 2.0
+    },
+    {
+     "turn": 56,
+     "context": 84792,
+     "fresh": 7394,
+     "cache_read": 77398,
+     "output": 453,
+     "gap_s": 63.6
+    },
+    {
+     "turn": 57,
+     "context": 88014,
+     "fresh": 3254,
+     "cache_read": 84760,
+     "output": 662,
+     "gap_s": 2.0
+    },
+    {
+     "turn": 58,
+     "context": 88805,
+     "fresh": 823,
+     "cache_read": 87982,
+     "output": 3447,
+     "gap_s": 185.3
+    },
+    {
+     "turn": 59,
+     "context": 94604,
+     "fresh": 5831,
+     "cache_read": 88773,
+     "output": 5536,
+     "gap_s": 13.3
+    },
+    {
+     "turn": 60,
+     "context": 100477,
+     "fresh": 5905,
+     "cache_read": 94572,
+     "output": 6852,
+     "gap_s": 1.7
+    },
+    {
+     "turn": 61,
+     "context": 107360,
+     "fresh": 6915,
+     "cache_read": 100445,
+     "output": 7445,
+     "gap_s": 1.8
+    },
+    {
+     "turn": 62,
+     "context": 115070,
+     "fresh": 7742,
+     "cache_read": 107328,
+     "output": 207,
+     "gap_s": 36.3
+    },
+    {
+     "turn": 63,
+     "context": 115310,
+     "fresh": 272,
+     "cache_read": 115038,
+     "output": 152,
+     "gap_s": 2.3
+    },
+    {
+     "turn": 64,
+     "context": 115511,
+     "fresh": 233,
+     "cache_read": 115278,
+     "output": 576,
+     "gap_s": 1.7
+    },
+    {
+     "turn": 65,
+     "context": 116418,
+     "fresh": 939,
+     "cache_read": 115479,
+     "output": 1052,
+     "gap_s": 16.8
+    },
+    {
+     "turn": 66,
+     "context": 117793,
+     "fresh": 1407,
+     "cache_read": 116386,
+     "output": 1211,
+     "gap_s": 4.4
+    },
+    {
+     "turn": 67,
+     "context": 119395,
+     "fresh": 1604,
+     "cache_read": 117791,
+     "output": 510,
+     "gap_s": 2.8
+    },
+    {
+     "turn": 68,
+     "context": 122992,
+     "fresh": 3629,
+     "cache_read": 119363,
+     "output": 590,
+     "gap_s": 3.7
+    },
+    {
+     "turn": 69,
+     "context": 123791,
+     "fresh": 801,
+     "cache_read": 122990,
+     "output": 9989,
+     "gap_s": 46.3
+    },
+    {
+     "turn": 70,
+     "context": 133841,
+     "fresh": 10052,
+     "cache_read": 123789,
+     "output": 3278,
+     "gap_s": 2.3
+    },
+    {
+     "turn": 71,
+     "context": 137168,
+     "fresh": 3359,
+     "cache_read": 133809,
+     "output": 207,
+     "gap_s": 5.9
+    },
+    {
+     "turn": 72,
+     "context": 138157,
+     "fresh": 1021,
+     "cache_read": 137136,
+     "output": 301,
+     "gap_s": 2.2
+    },
+    {
+     "turn": 73,
+     "context": 138661,
+     "fresh": 536,
+     "cache_read": 138125,
+     "output": 800,
+     "gap_s": 4.0
+    },
+    {
+     "turn": 74,
+     "context": 139603,
+     "fresh": 974,
+     "cache_read": 138629,
+     "output": 272,
+     "gap_s": 12.8
+    },
+    {
+     "turn": 75,
+     "context": 139981,
+     "fresh": 410,
+     "cache_read": 139571,
+     "output": 1244,
+     "gap_s": 10.9
+    },
+    {
+     "turn": 76,
+     "context": 142096,
+     "fresh": 2147,
+     "cache_read": 139949,
+     "output": 528,
+     "gap_s": 9.6
+    },
+    {
+     "turn": 77,
+     "context": 143292,
+     "fresh": 1228,
+     "cache_read": 142064,
+     "output": 418,
+     "gap_s": 2.2
+    },
+    {
+     "turn": 78,
+     "context": 143789,
+     "fresh": 529,
+     "cache_read": 143260,
+     "output": 973,
+     "gap_s": 1.8
+    },
+    {
+     "turn": 79,
+     "context": 144773,
+     "fresh": 1016,
+     "cache_read": 143757,
+     "output": 677,
+     "gap_s": 247.6
+    },
+    {
+     "turn": 80,
+     "context": 145546,
+     "fresh": 775,
+     "cache_read": 144771,
+     "output": 267,
+     "gap_s": 2.4
+    },
+    {
+     "turn": 81,
+     "context": 145928,
+     "fresh": 414,
+     "cache_read": 145514,
+     "output": 907,
+     "gap_s": 241.5
+    },
+    {
+     "turn": 82,
+     "context": 146943,
+     "fresh": 1017,
+     "cache_read": 145926,
+     "output": 345,
+     "gap_s": 124.1
+    },
+    {
+     "turn": 83,
+     "context": 37006,
+     "fresh": 440,
+     "cache_read": 36566,
+     "output": 178,
+     "gap_s": 161.3,
+     "reset": true
+    },
+    {
+     "turn": 84,
+     "context": 37308,
+     "fresh": 304,
+     "cache_read": 37004,
+     "output": 62,
+     "gap_s": 4.1
+    },
+    {
+     "turn": 85,
+     "context": 147329,
+     "fresh": 388,
+     "cache_read": 146941,
+     "output": 696,
+     "gap_s": 186.9
+    },
+    {
+     "turn": 86,
+     "context": 148072,
+     "fresh": 745,
+     "cache_read": 147327,
+     "output": 1084,
+     "gap_s": 45.4
+    },
+    {
+     "turn": 87,
+     "context": 149399,
+     "fresh": 1329,
+     "cache_read": 148070,
+     "output": 139,
+     "gap_s": 30.9
+    },
+    {
+     "turn": 88,
+     "context": 149577,
+     "fresh": 210,
+     "cache_read": 149367,
+     "output": 198,
+     "gap_s": 1.6
+    },
+    {
+     "turn": 89,
+     "context": 149787,
+     "fresh": 242,
+     "cache_read": 149545,
+     "output": 141,
+     "gap_s": 2.5
+    },
+    {
+     "turn": 90,
+     "context": 150025,
+     "fresh": 240,
+     "cache_read": 149785,
+     "output": 61,
+     "gap_s": 1.6
+    },
+    {
+     "turn": 91,
+     "context": 150151,
+     "fresh": 158,
+     "cache_read": 149993,
+     "output": 2321,
+     "gap_s": 150.8
+    },
+    {
+     "turn": 92,
+     "context": 152644,
+     "fresh": 2495,
+     "cache_read": 150149,
+     "output": 534,
+     "gap_s": 5.2
+    },
+    {
+     "turn": 93,
+     "context": 153291,
+     "fresh": 649,
+     "cache_read": 152642,
+     "output": 315,
+     "gap_s": 24.9
+    },
+    {
+     "turn": 94,
+     "context": 154030,
+     "fresh": 771,
+     "cache_read": 153259,
+     "output": 911,
+     "gap_s": 13.4
+    },
+    {
+     "turn": 95,
+     "context": 155245,
+     "fresh": 1247,
+     "cache_read": 153998,
+     "output": 383,
+     "gap_s": 9.1
+    },
+    {
+     "turn": 96,
+     "context": 155756,
+     "fresh": 543,
+     "cache_read": 155213,
+     "output": 622,
+     "gap_s": 1.7
+    },
+    {
+     "turn": 97,
+     "context": 156407,
+     "fresh": 683,
+     "cache_read": 155724,
+     "output": 134,
+     "gap_s": 91.8
+    },
+    {
+     "turn": 98,
+     "context": 156597,
+     "fresh": 192,
+     "cache_read": 156405,
+     "output": 366,
+     "gap_s": 50.3
+    },
+    {
+     "turn": 99,
+     "context": 157336,
+     "fresh": 741,
+     "cache_read": 156595,
+     "output": 633,
+     "gap_s": 1.6
+    },
+    {
+     "turn": 100,
+     "context": 158372,
+     "fresh": 1068,
+     "cache_read": 157304,
+     "output": 229,
+     "gap_s": 1.9
+    },
+    {
+     "turn": 101,
+     "context": 158633,
+     "fresh": 293,
+     "cache_read": 158340,
+     "output": 794,
+     "gap_s": 67.4
+    },
+    {
+     "turn": 102,
+     "context": 160400,
+     "fresh": 1769,
+     "cache_read": 158631,
+     "output": 292,
+     "gap_s": 1.9
+    },
+    {
+     "turn": 103,
+     "context": 160736,
+     "fresh": 368,
+     "cache_read": 160368,
+     "output": 90,
+     "gap_s": 401.8
+    },
+    {
+     "turn": 104,
+     "context": 160944,
+     "fresh": 210,
+     "cache_read": 160734,
+     "output": 1044,
+     "gap_s": 185.5
+    },
+    {
+     "turn": 105,
+     "context": 162243,
+     "fresh": 1301,
+     "cache_read": 160942,
+     "output": 4442,
+     "gap_s": 2.3
+    },
+    {
+     "turn": 106,
+     "context": 166793,
+     "fresh": 4582,
+     "cache_read": 162211,
+     "output": 442,
+     "gap_s": 12.2
+    },
+    {
+     "turn": 107,
+     "context": 167320,
+     "fresh": 559,
+     "cache_read": 166761,
+     "output": 4287,
+     "gap_s": 0.0
+    },
+    {
+     "turn": 108,
+     "context": 171776,
+     "fresh": 4488,
+     "cache_read": 167288,
+     "output": 2797,
+     "gap_s": 5.3
+    },
+    {
+     "turn": 109,
+     "context": 174769,
+     "fresh": 2995,
+     "cache_read": 171774,
+     "output": 952,
+     "gap_s": 20.7
+    },
+    {
+     "turn": 110,
+     "context": 175840,
+     "fresh": 1073,
+     "cache_read": 174767,
+     "output": 495,
+     "gap_s": 2.1
+    },
+    {
+     "turn": 111,
+     "context": 176359,
+     "fresh": 551,
+     "cache_read": 175808,
+     "output": 459,
+     "gap_s": 126.0
+    },
+    {
+     "turn": 112,
+     "context": 181231,
+     "fresh": 4874,
+     "cache_read": 176357,
+     "output": 1241,
+     "gap_s": 1.9
+    },
+    {
+     "turn": 113,
+     "context": 183733,
+     "fresh": 2534,
+     "cache_read": 181199,
+     "output": 207,
+     "gap_s": 2.3
+    },
+    {
+     "turn": 114,
+     "context": 185143,
+     "fresh": 1442,
+     "cache_read": 183701,
+     "output": 355,
+     "gap_s": 0.1
+    },
+    {
+     "turn": 115,
+     "context": 185537,
+     "fresh": 426,
+     "cache_read": 185111,
+     "output": 392,
+     "gap_s": 2.1
+    },
+    {
+     "turn": 116,
+     "context": 187617,
+     "fresh": 2112,
+     "cache_read": 185505,
+     "output": 2149,
+     "gap_s": 2.0
+    },
+    {
+     "turn": 117,
+     "context": 190260,
+     "fresh": 2675,
+     "cache_read": 187585,
+     "output": 910,
+     "gap_s": 37.8
+    },
+    {
+     "turn": 118,
+     "context": 191378,
+     "fresh": 1150,
+     "cache_read": 190228,
+     "output": 301,
+     "gap_s": 4.0
+    },
+    {
+     "turn": 119,
+     "context": 191712,
+     "fresh": 366,
+     "cache_read": 191346,
+     "output": 522,
+     "gap_s": 2.0
+    },
+    {
+     "turn": 120,
+     "context": 192298,
+     "fresh": 618,
+     "cache_read": 191680,
+     "output": 3828,
+     "gap_s": 102.6
+    },
+    {
+     "turn": 121,
+     "context": 196608,
+     "fresh": 4312,
+     "cache_read": 192296,
+     "output": 2076,
+     "gap_s": 39.7
+    },
+    {
+     "turn": 122,
+     "context": 199085,
+     "fresh": 2509,
+     "cache_read": 196576,
+     "output": 447,
+     "gap_s": 2.9
+    },
+    {
+     "turn": 123,
+     "context": 199661,
+     "fresh": 608,
+     "cache_read": 199053,
+     "output": 209,
+     "gap_s": 20.9
+    },
+    {
+     "turn": 124,
+     "context": 199912,
+     "fresh": 283,
+     "cache_read": 199629,
+     "output": 426,
+     "gap_s": 1.7
+    },
+    {
+     "turn": 125,
+     "context": 200352,
+     "fresh": 472,
+     "cache_read": 199880,
+     "output": 680,
+     "gap_s": 0.1
+    },
+    {
+     "turn": 126,
+     "context": 201202,
+     "fresh": 852,
+     "cache_read": 200350,
+     "output": 44,
+     "gap_s": 0.0
+    },
+    {
+     "turn": 127,
+     "context": 201264,
+     "fresh": 94,
+     "cache_read": 201170,
+     "output": 486,
+     "gap_s": 19.7
+    },
+    {
+     "turn": 128,
+     "context": 201793,
+     "fresh": 531,
+     "cache_read": 201262,
+     "output": 269,
+     "gap_s": 1673.5
+    },
+    {
+     "turn": 129,
+     "context": 202225,
+     "fresh": 182976,
+     "cache_read": 19249,
+     "output": 447,
+     "gap_s": 86.2
+    },
+    {
+     "turn": 130,
+     "context": 202746,
+     "fresh": 523,
+     "cache_read": 202223,
+     "output": 61,
+     "gap_s": 113.7
+    },
+    {
+     "turn": 131,
+     "context": 202882,
+     "fresh": 138,
+     "cache_read": 202744,
+     "output": 860,
+     "gap_s": 1445.0
+    },
+    {
+     "turn": 132,
+     "context": 203961,
+     "fresh": 1081,
+     "cache_read": 202880,
+     "output": 2214,
+     "gap_s": 128.0
+    },
+    {
+     "turn": 133,
+     "context": 206847,
+     "fresh": 2888,
+     "cache_read": 203959,
+     "output": 1213,
+     "gap_s": 5.5
+    },
+    {
+     "turn": 134,
+     "context": 223128,
+     "fresh": 16313,
+     "cache_read": 206815,
+     "output": 5934,
+     "gap_s": 38.5
+    },
+    {
+     "turn": 135,
+     "context": 229612,
+     "fresh": 6516,
+     "cache_read": 223096,
+     "output": 1495,
+     "gap_s": 1.1
+    },
+    {
+     "turn": 136,
+     "context": 233361,
+     "fresh": 3751,
+     "cache_read": 229610,
+     "output": 6644,
+     "gap_s": 2.0
+    },
+    {
+     "turn": 137,
+     "context": 241651,
+     "fresh": 8322,
+     "cache_read": 233329,
+     "output": 10824,
+     "gap_s": 1.6
+    },
+    {
+     "turn": 138,
+     "context": 254665,
+     "fresh": 13046,
+     "cache_read": 241619,
+     "output": 791,
+     "gap_s": 4.0
+    },
+    {
+     "turn": 139,
+     "context": 255958,
+     "fresh": 1325,
+     "cache_read": 254633,
+     "output": 627,
+     "gap_s": 3.7
+    },
+    {
+     "turn": 140,
+     "context": 257125,
+     "fresh": 1199,
+     "cache_read": 255926,
+     "output": 1788,
+     "gap_s": 30.3
+    },
+    {
+     "turn": 141,
+     "context": 260098,
+     "fresh": 3005,
+     "cache_read": 257093,
+     "output": 1960,
+     "gap_s": 5.2
+    },
+    {
+     "turn": 142,
+     "context": 262676,
+     "fresh": 2610,
+     "cache_read": 260066,
+     "output": 1236,
+     "gap_s": 5.9
+    },
+    {
+     "turn": 143,
+     "context": 264111,
+     "fresh": 1467,
+     "cache_read": 262644,
+     "output": 833,
+     "gap_s": 5.7
+    },
+    {
+     "turn": 144,
+     "context": 265305,
+     "fresh": 1226,
+     "cache_read": 264079,
+     "output": 770,
+     "gap_s": 1.7
+    },
+    {
+     "turn": 145,
+     "context": 954,
+     "fresh": 954,
+     "cache_read": 0,
+     "output": 17,
+     "gap_s": 797.7,
+     "reset": true
+    },
+    {
+     "turn": 146,
+     "context": 33809,
+     "fresh": 14560,
+     "cache_read": 19249,
+     "output": 349,
+     "gap_s": -1.0,
+     "parallel": true
+    },
+    {
+     "turn": 147,
+     "context": 34921,
+     "fresh": 1114,
+     "cache_read": 33807,
+     "output": 186,
+     "gap_s": 2.0
+    },
+    {
+     "turn": 148,
+     "context": 38701,
+     "fresh": 3812,
+     "cache_read": 34889,
+     "output": 2701,
+     "gap_s": 0.1
+    },
+    {
+     "turn": 149,
+     "context": 41416,
+     "fresh": 2747,
+     "cache_read": 38669,
+     "output": 995,
+     "gap_s": 191.0
+    },
+    {
+     "turn": 150,
+     "context": 43422,
+     "fresh": 2008,
+     "cache_read": 41414,
+     "output": 145,
+     "gap_s": 0.1
+    },
+    {
+     "turn": 151,
+     "context": 44550,
+     "fresh": 1160,
+     "cache_read": 43390,
+     "output": 317,
+     "gap_s": 0.0
+    },
+    {
+     "turn": 152,
+     "context": 62731,
+     "fresh": 18213,
+     "cache_read": 44518,
+     "output": 2841,
+     "gap_s": 1.9
+    },
+    {
+     "turn": 153,
+     "context": 65734,
+     "fresh": 3035,
+     "cache_read": 62699,
+     "output": 691,
+     "gap_s": 26.1
+    },
+    {
+     "turn": 154,
+     "context": 67342,
+     "fresh": 1640,
+     "cache_read": 65702,
+     "output": 505,
+     "gap_s": 2.3
+    },
+    {
+     "turn": 155,
+     "context": 68386,
+     "fresh": 1076,
+     "cache_read": 67310,
+     "output": 681,
+     "gap_s": 23.3
+    },
+    {
+     "turn": 156,
+     "context": 69150,
+     "fresh": 796,
+     "cache_read": 68354,
+     "output": 231,
+     "gap_s": 1.8
+    },
+    {
+     "turn": 157,
+     "context": 70102,
+     "fresh": 984,
+     "cache_read": 69118,
+     "output": 646,
+     "gap_s": 0.0
+    },
+    {
+     "turn": 158,
+     "context": 71149,
+     "fresh": 1079,
+     "cache_read": 70070,
+     "output": 397,
+     "gap_s": 2.2
+    },
+    {
+     "turn": 159,
+     "context": 71759,
+     "fresh": 642,
+     "cache_read": 71117,
+     "output": 1162,
+     "gap_s": 4.5
+    },
+    {
+     "turn": 160,
+     "context": 75212,
+     "fresh": 3485,
+     "cache_read": 71727,
+     "output": 1401,
+     "gap_s": 1.9
+    },
+    {
+     "turn": 161,
+     "context": 76846,
+     "fresh": 1666,
+     "cache_read": 75180,
+     "output": 605,
+     "gap_s": 22.4
+    },
+    {
+     "turn": 162,
+     "context": 77587,
+     "fresh": 773,
+     "cache_read": 76814,
+     "output": 3572,
+     "gap_s": 3.5
+    },
+    {
+     "turn": 163,
+     "context": 81505,
+     "fresh": 3950,
+     "cache_read": 77555,
+     "output": 536,
+     "gap_s": 5.5
+    },
+    {
+     "turn": 164,
+     "context": 82241,
+     "fresh": 768,
+     "cache_read": 81473,
+     "output": 125,
+     "gap_s": 2.1
+    },
+    {
+     "turn": 165,
+     "context": 82999,
+     "fresh": 790,
+     "cache_read": 82209,
+     "output": 308,
+     "gap_s": 7.2
+    },
+    {
+     "turn": 166,
+     "context": 88687,
+     "fresh": 5720,
+     "cache_read": 82967,
+     "output": 546,
+     "gap_s": 4.0
+    },
+    {
+     "turn": 167,
+     "context": 96508,
+     "fresh": 7853,
+     "cache_read": 88655,
+     "output": 521,
+     "gap_s": 1.8
+    },
+    {
+     "turn": 168,
+     "context": 97123,
+     "fresh": 647,
+     "cache_read": 96476,
+     "output": 520,
+     "gap_s": 2.5
+    },
+    {
+     "turn": 169,
+     "context": 266303,
+     "fresh": 1030,
+     "cache_read": 265273,
+     "output": 473,
+     "gap_s": 28.5
+    },
+    {
+     "turn": 170,
+     "context": 266815,
+     "fresh": 514,
+     "cache_read": 266301,
+     "output": 469,
+     "gap_s": 30.1
+    },
+    {
+     "turn": 171,
+     "context": 98111,
+     "fresh": 1020,
+     "cache_read": 97091,
+     "output": 418,
+     "gap_s": -0.7,
+     "reset": true,
+     "parallel": true
+    },
+    {
+     "turn": 172,
+     "context": 267417,
+     "fresh": 604,
+     "cache_read": 266813,
+     "output": 479,
+     "gap_s": 0.2
+    },
+    {
+     "turn": 173,
+     "context": 98606,
+     "fresh": 497,
+     "cache_read": 98109,
+     "output": 686,
+     "gap_s": -4.7,
+     "reset": true,
+     "parallel": true
+    },
+    {
+     "turn": 174,
+     "context": 269430,
+     "fresh": 2045,
+     "cache_read": 267385,
+     "output": 1256,
+     "gap_s": -3.7,
+     "parallel": true
+    },
+    {
+     "turn": 175,
+     "context": 271134,
+     "fresh": 1736,
+     "cache_read": 269398,
+     "output": 1089,
+     "gap_s": 2.0
+    },
+    {
+     "turn": 176,
+     "context": 273229,
+     "fresh": 2127,
+     "cache_read": 271102,
+     "output": 740,
+     "gap_s": 0.0
+    },
+    {
+     "turn": 177,
+     "context": 274225,
+     "fresh": 1028,
+     "cache_read": 273197,
+     "output": 329,
+     "gap_s": 41.5
+    },
+    {
+     "turn": 178,
+     "context": 274585,
+     "fresh": 392,
+     "cache_read": 274193,
+     "output": 459,
+     "gap_s": 2.5
+    },
+    {
+     "turn": 179,
+     "context": 99302,
+     "fresh": 728,
+     "cache_read": 98574,
+     "output": 294,
+     "gap_s": 25.4,
+     "reset": true
+    },
+    {
+     "turn": 180,
+     "context": 106032,
+     "fresh": 6732,
+     "cache_read": 99300,
+     "output": 1153,
+     "gap_s": 0.1
+    },
+    {
+     "turn": 181,
+     "context": 107953,
+     "fresh": 1953,
+     "cache_read": 106000,
+     "output": 1055,
+     "gap_s": 2.0
+    },
+    {
+     "turn": 182,
+     "context": 109319,
+     "fresh": 1398,
+     "cache_read": 107921,
+     "output": 2083,
+     "gap_s": 0.1
+    },
+    {
+     "turn": 183,
+     "context": 111659,
+     "fresh": 2372,
+     "cache_read": 109287,
+     "output": 1316,
+     "gap_s": 5.7
+    },
+    {
+     "turn": 184,
+     "context": 113014,
+     "fresh": 1387,
+     "cache_read": 111627,
+     "output": 445,
+     "gap_s": 1.7
+    },
+    {
+     "turn": 185,
+     "context": 114031,
+     "fresh": 1049,
+     "cache_read": 112982,
+     "output": 421,
+     "gap_s": 5.4
+    },
+    {
+     "turn": 186,
+     "context": 114589,
+     "fresh": 590,
+     "cache_read": 113999,
+     "output": 442,
+     "gap_s": 3.6
+    },
+    {
+     "turn": 187,
+     "context": 115301,
+     "fresh": 744,
+     "cache_read": 114557,
+     "output": 215,
+     "gap_s": 7.9
+    },
+    {
+     "turn": 188,
+     "context": 117721,
+     "fresh": 2452,
+     "cache_read": 115269,
+     "output": 932,
+     "gap_s": 0.1
+    },
+    {
+     "turn": 189,
+     "context": 118719,
+     "fresh": 1030,
+     "cache_read": 117689,
+     "output": 177,
+     "gap_s": 6.9
+    },
+    {
+     "turn": 190,
+     "context": 118935,
+     "fresh": 248,
+     "cache_read": 118687,
+     "output": 453,
+     "gap_s": 1.8
+    },
+    {
+     "turn": 191,
+     "context": 119390,
+     "fresh": 487,
+     "cache_read": 118903,
+     "output": 167,
+     "gap_s": 397.1
+    },
+    {
+     "turn": 192,
+     "context": 119622,
+     "fresh": 234,
+     "cache_read": 119388,
+     "output": 1266,
+     "gap_s": 1470.0
+    },
+    {
+     "turn": 193,
+     "context": 38824,
+     "fresh": 19575,
+     "cache_read": 19249,
+     "output": 427,
+     "gap_s": 777.4,
+     "reset": true
+    },
+    {
+     "turn": 194,
+     "context": 40325,
+     "fresh": 1503,
+     "cache_read": 38822,
+     "output": 442,
+     "gap_s": 2.0
+    },
+    {
+     "turn": 195,
+     "context": 41396,
+     "fresh": 1103,
+     "cache_read": 40293,
+     "output": 339,
+     "gap_s": 2.9
+    },
+    {
+     "turn": 196,
+     "context": 42468,
+     "fresh": 1104,
+     "cache_read": 41364,
+     "output": 455,
+     "gap_s": 1.6
+    },
+    {
+     "turn": 197,
+     "context": 42987,
+     "fresh": 551,
+     "cache_read": 42436,
+     "output": 520,
+     "gap_s": 2.1
+    },
+    {
+     "turn": 198,
+     "context": 43517,
+     "fresh": 562,
+     "cache_read": 42955,
+     "output": 426,
+     "gap_s": 239.9
+    },
+    {
+     "turn": 199,
+     "context": 46592,
+     "fresh": 3077,
+     "cache_read": 43515,
+     "output": 281,
+     "gap_s": 2.0
+    }
+   ]
+  }
+ }
+}
