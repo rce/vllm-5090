@@ -7,6 +7,8 @@
 #   ./run.sh --max-num-batched-tokens 4096     # raw `vllm serve` flags
 #
 # Env vars also override the profile: MAX_MODEL_LEN=8192 ./run.sh
+# DETACH=1 starts the container in the background (for scripts; runs.sh uses
+# it) instead of attaching a terminal; stop it with `podman stop $NAME`.
 set -euo pipefail
 
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -39,7 +41,8 @@ for v in MODEL SERVED_MODEL_NAME MAX_MODEL_LEN MAX_NUM_SEQS GPU_MEMORY_UTILIZATI
   [[ -n "${!v:-}" ]] && overrides+=(-e "$v=${!v}")
 done
 
-exec podman run --rm -it \
+attach=(-it); [[ -n "${DETACH:-}" ]] && attach=(-d)
+exec podman run --rm "${attach[@]}" \
   --name "${NAME:-vllm-$PROFILE}" \
   --device nvidia.com/gpu=all \
   --security-opt=label=disable \

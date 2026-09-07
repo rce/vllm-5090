@@ -13,7 +13,7 @@
   <header>
     <nav class="pages" aria-label="Result pages"><span>LLM serving</span><span class="sep"></span><a href="agentic.html">Agentic loops</a><span class="sep"></span><a href="video.html">Video generation</a></nav>
     <h1>vLLM on one RTX 5090</h1>
-    <p>Serving Qwen3.x locally on a single 32 GiB Blackwell card. Every number here was
+    <p>Serving open models locally on a single 32 GiB Blackwell card. Every number here was
        measured on that machine — single-stream decode, 300-token completions, thinking
        disabled, cold sample discarded.</p>
     <div class="meta" id="meta"></div>
@@ -206,6 +206,9 @@
 (async function () {
   const $ = (id) => document.getElementById(id);
   const fmt = (n) => n.toLocaleString('en-US');
+  // Model identity keeps the first two categorical slots for the two models
+  // the page started with; any model that arrives later takes the next slot,
+  // in the order it first appears in the data, so its colour is stable.
   const COLOR = { 'Qwen3.6-35B-A3B': 'var(--series-moe)', 'Qwen3.8-27B': 'var(--series-dense)' };
 
   let data;
@@ -227,6 +230,12 @@
 
   $('loading').hidden = true;
   $('content').hidden = false;
+
+  let nextSlot = 3;
+  for (const m of [...(data.runs || []), ...(data.sweeps || []), ...(data.divergence || []), ...(data.jitter || [])]
+      .map(e => e.model).filter(Boolean)) {
+    if (!COLOR[m]) COLOR[m] = `var(--series-${Math.min(nextSlot++, 8)})`;
+  }
 
   // --- meta line -----------------------------------------------------------
   const hw = data.hardware, sw = data.software;

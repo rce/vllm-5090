@@ -128,6 +128,24 @@ container.
 ./bench.py --concurrency 1,2,4,8,16,32 --output-tokens 512
 ```
 
+The page's headline charts (single-stream decode, KV pool) are the `runs`
+table, produced by `bench.py --single`: one request at a time on an idle
+server, 300 output tokens cut from a longer essay (not `ignore_eos`: a model
+forced past its end writes repetitive text, and the first scripted MTP run
+measured 452 tok/s at 0.56 acceptance on it, against 296 at 0.40 on natural
+text), a cold request discarded and the median of three kept; the KV pool and
+concurrency read from the `vllm:cache_config_info`
+gauge on `/metrics`, the weights from the HF cache, vision / CUDA graphs / MTP
+from the profile plus overrides. `runs.sh` does it for every configuration on
+the page, starting and stopping each server (needs `DETACH=1`, which `run.sh`
+now takes), about 25 minutes for the six. Until 2026-09-07 that table was
+measured by hand, which is why Nemotron was missing from it.
+
+```sh
+./runs.sh                                   # all six
+./runs.sh nemotron-default qwen36-moe-mtp   # just these ids
+```
+
 Design choices worth knowing when reading the numbers:
 
 - **`ignore_eos: true`.** Every request emits exactly `--output-tokens` tokens,

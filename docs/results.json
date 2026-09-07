@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated": "2026-09-06",
+  "generated": "2026-09-07",
   "hardware": {
     "gpu": "NVIDIA GeForce RTX 5090",
     "arch": "Blackwell sm120",
@@ -21,132 +21,182 @@
     "transformers": "5.15.1"
   },
   "method": {
-    "workload": "single request, 300 max_tokens, thinking disabled, empty KV cache",
-    "prompt": "Write a short paragraph about the sea.",
-    "warmup": "first sample after startup discarded as cold; reported value is the median of the samples that follow",
-    "kv_tokens": "GPU KV cache size as reported by vLLM at startup",
-    "acceptance": "vllm:spec_decode_num_accepted_tokens_total / vllm:spec_decode_num_draft_tokens_total"
+    "workload": "single request, 300 output tokens cut from a longer answer (no ignore_eos, so speculative decoding sees natural text), temperature 0, thinking disabled, idle server",
+    "prompt": "Write a detailed essay of about 600 words on the sea: its physical nature, its role in climate, and what it has meant to people.",
+    "warmup": "first request after startup discarded as cold; reported value is the median of the 3 that follow",
+    "kv_tokens": "kv_cache_size_tokens from the vllm:cache_config_info gauge on /metrics",
+    "acceptance": "vllm:spec_decode_num_accepted_tokens_total / vllm:spec_decode_num_draft_tokens_total, over the samples"
   },
   "runs": [
     {
       "id": "qwen36-moe-default",
       "status": "ok",
       "profile": "qwen3.6-35b-a3b",
+      "overrides": "",
       "model": "Qwen3.6-35B-A3B",
       "checkpoint": "nvidia/Qwen3.6-35B-A3B-NVFP4",
       "shape": "MoE, 35B total / 3B active",
       "precision": "NVFP4",
-      "weights_gb": 23.5,
+      "weights_gb": 21.9,
+      "weights_source": "loaded on the GPU, from vLLM's load report",
       "max_model_len": 65536,
-      "kv_tokens": 380817,
-      "max_concurrency": 5.81,
       "vision": true,
       "cuda_graphs": true,
       "spec_decode": false,
-      "decode_tok_s": 236.3,
+      "decode_tok_s": 289.0,
+      "decode_cold_sample": 289.5,
       "decode_samples": [
-        236.3,
-        234.0,
-        237.8
+        289.1,
+        289.0,
+        289.0
       ],
-      "decode_cold_sample": 153.0
+      "generated": "2026-09-07",
+      "vllm_version": "0.28.0",
+      "kv_tokens": 370189,
+      "max_concurrency": 5.65,
+      "kv_cache_dtype": "fp8"
     },
     {
       "id": "qwen36-moe-mtp",
       "status": "ok",
       "profile": "qwen3.6-35b-a3b",
+      "overrides": "SPEC_DECODE=1",
       "model": "Qwen3.6-35B-A3B",
       "checkpoint": "nvidia/Qwen3.6-35B-A3B-NVFP4",
       "shape": "MoE, 35B total / 3B active",
       "precision": "NVFP4",
-      "weights_gb": 23.5,
+      "weights_gb": 23.6,
+      "weights_source": "loaded on the GPU, from vLLM's load report",
       "max_model_len": 65536,
-      "kv_tokens": 135084,
-      "max_concurrency": 2.06,
       "vision": true,
       "cuda_graphs": true,
       "spec_decode": true,
-      "spec_config": "{\"method\":\"mtp\",\"num_speculative_tokens\":4,\"moe_backend\":\"flashinfer_cutlass\"}",
-      "spec_acceptance": 0.405,
-      "decode_tok_s": 296.3,
+      "decode_tok_s": 358.0,
+      "decode_cold_sample": 359.8,
       "decode_samples": [
-        336.8,
-        296.3,
-        276.4
+        361.9,
+        358.0,
+        355.3
       ],
-      "decode_cold_sample": 110.1,
-      "overrides": "SPEC_DECODE=1"
+      "generated": "2026-09-07",
+      "vllm_version": "0.28.0",
+      "kv_tokens": 111009,
+      "max_concurrency": 1.69,
+      "kv_cache_dtype": "fp8",
+      "spec_acceptance": 0.39
     },
     {
       "id": "qwen38-dense-mtp",
       "status": "ok",
       "profile": "qwen3.8-27b",
+      "overrides": "SPEC_DECODE=1 LANGUAGE_MODEL_ONLY=1",
       "model": "Qwen3.8-27B",
       "checkpoint": "Inferact/Qwen3.8-27B-NVFP4",
       "shape": "dense 27B",
       "precision": "NVFP4",
-      "weights_gb": 24.6,
+      "weights_gb": 25.9,
+      "weights_source": "loaded on the GPU, from vLLM's load report",
       "max_model_len": 32768,
-      "kv_tokens": 70087,
-      "max_concurrency": 2.14,
       "vision": false,
       "cuda_graphs": false,
       "spec_decode": true,
-      "spec_config": "{\"method\":\"mtp\",\"num_speculative_tokens\":3}",
-      "spec_acceptance": 0.815,
-      "decode_tok_s": 50.1,
+      "decode_tok_s": 53.1,
+      "decode_cold_sample": 53.0,
       "decode_samples": [
-        51.6,
-        48.6
+        53.0,
+        53.2,
+        53.1
       ],
-      "decode_cold_sample": 13.8,
-      "overrides": "SPEC_DECODE=1 LANGUAGE_MODEL_ONLY=1",
-      "note": "Acceptance re-measured over 28,338 draft tokens during the concurrency sweep. The original 0.48 came from a 519-token sample and was too small to trust."
+      "generated": "2026-09-07",
+      "vllm_version": "0.28.0",
+      "kv_tokens": 70087,
+      "max_concurrency": 2.14,
+      "kv_cache_dtype": "fp8",
+      "spec_acceptance": 0.48
     },
     {
       "id": "qwen38-fp8-official",
       "status": "ok",
       "profile": "qwen3.8-27b",
+      "overrides": "MODEL=Qwen/Qwen3.8-27B-FP8 MAX_MODEL_LEN=4096 MAX_NUM_SEQS=2 GPU_MEMORY_UTILIZATION=0.93 LANGUAGE_MODEL_ONLY=1 EXTRA_ARGS=--max-num-batched-tokens 1024",
       "model": "Qwen3.8-27B",
       "checkpoint": "Qwen/Qwen3.8-27B-FP8",
       "shape": "dense 27B",
       "precision": "FP8 (official)",
-      "weights_gb": 30.9,
+      "weights_gb": 29.7,
+      "weights_source": "loaded on the GPU, from vLLM's load report",
       "max_model_len": 4096,
-      "kv_tokens": 9557,
-      "max_concurrency": 2.33,
       "vision": false,
       "cuda_graphs": false,
       "spec_decode": false,
-      "decode_tok_s": 37.5,
+      "decode_tok_s": 40.5,
+      "decode_cold_sample": 40.3,
       "decode_samples": [
-        37.5
+        40.1,
+        40.5,
+        40.5
       ],
-      "overrides": "MAX_MODEL_LEN=4096 MAX_NUM_SEQS=2 GPU_MEMORY_UTILIZATION=0.93 LANGUAGE_MODEL_ONLY=1 EXTRA_ARGS='--max-num-batched-tokens 1024'",
-      "note": "Fits only in this cramped envelope. Usable, but not competitive with NVFP4."
+      "generated": "2026-09-07",
+      "vllm_version": "0.28.0",
+      "kv_tokens": 9102,
+      "max_concurrency": 2.22,
+      "kv_cache_dtype": "fp8"
     },
     {
       "id": "qwen38-dense-default",
       "status": "ok",
       "profile": "qwen3.8-27b",
+      "overrides": "",
       "model": "Qwen3.8-27B",
       "checkpoint": "Inferact/Qwen3.8-27B-NVFP4",
       "shape": "dense 27B",
       "precision": "NVFP4",
-      "weights_gb": 24.6,
+      "weights_gb": 26.0,
+      "weights_source": "loaded on the GPU, from vLLM's load report",
       "max_model_len": 32768,
-      "kv_tokens": 60681,
-      "max_concurrency": 1.85,
       "vision": true,
       "cuda_graphs": false,
       "spec_decode": false,
-      "decode_tok_s": 24.6,
+      "decode_tok_s": 25.6,
+      "decode_cold_sample": 25.5,
       "decode_samples": [
-        24.1,
-        24.6,
-        24.6
+        25.6,
+        25.6,
+        25.7
       ],
-      "decode_cold_sample": 14.0
+      "generated": "2026-09-07",
+      "vllm_version": "0.28.0",
+      "kv_tokens": 60681,
+      "max_concurrency": 1.85,
+      "kv_cache_dtype": "fp8"
+    },
+    {
+      "id": "nemotron-default",
+      "status": "ok",
+      "profile": "nemotron-3.5-lightning",
+      "overrides": "",
+      "model": "Nemotron-3.5-Lightning-30B-A3B",
+      "checkpoint": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4",
+      "shape": "MoE, 30B total / 3B active, Mamba hybrid",
+      "precision": "NVFP4",
+      "weights_gb": 19.2,
+      "weights_source": "loaded on the GPU, from vLLM's load report",
+      "max_model_len": 65536,
+      "vision": true,
+      "cuda_graphs": true,
+      "spec_decode": false,
+      "decode_tok_s": 392.4,
+      "decode_cold_sample": 392.7,
+      "decode_samples": [
+        392.4,
+        392.3,
+        392.4
+      ],
+      "generated": "2026-09-07",
+      "vllm_version": "0.28.0",
+      "kv_tokens": 1497245,
+      "max_concurrency": 22.85,
+      "kv_cache_dtype": "fp8"
     }
   ],
   "failures": [
@@ -1779,7 +1829,7 @@
   ],
   "divergence": [
     {
-      "label": "Qwen3.6 bf16 KV → same server again",
+      "label": "Qwen3.6 bf16 KV \u2192 same server again",
       "a": "q36-root",
       "b": "q36-root-rerun",
       "model": "Qwen3.6-35B-A3B",
@@ -1921,7 +1971,7 @@
       "notes": "run-to-run floor at full prompt-set scale"
     },
     {
-      "label": "Qwen3.6 bf16 KV → fp8 KV",
+      "label": "Qwen3.6 bf16 KV \u2192 fp8 KV",
       "a": "q36-root",
       "b": "q36-kvfp8",
       "model": "Qwen3.6-35B-A3B",
@@ -2062,7 +2112,7 @@
       }
     },
     {
-      "label": "Qwen3.6 bf16 KV → + MTP",
+      "label": "Qwen3.6 bf16 KV \u2192 + MTP",
       "a": "q36-root",
       "b": "q36-mtp",
       "model": "Qwen3.6-35B-A3B",
@@ -2204,7 +2254,7 @@
       "suspect": "prompt_logprobs under MTP returns the draft head's predictions (vLLM 0.28.0); generation side is at the floor"
     },
     {
-      "label": "Qwen3.6 bf16 KV → eager",
+      "label": "Qwen3.6 bf16 KV \u2192 eager",
       "a": "q36-root",
       "b": "q36-eager",
       "model": "Qwen3.6-35B-A3B",
@@ -2345,7 +2395,7 @@
       }
     },
     {
-      "label": "Qwen3.8 FP8 → same server again",
+      "label": "Qwen3.8 FP8 \u2192 same server again",
       "a": "q38-fp8",
       "b": "q38-fp8-rerun",
       "model": "Qwen3.8-27B",
@@ -2487,7 +2537,7 @@
       "notes": "run-to-run floor at full prompt-set scale"
     },
     {
-      "label": "Qwen3.8 FP8 → NVFP4",
+      "label": "Qwen3.8 FP8 \u2192 NVFP4",
       "a": "q38-fp8",
       "b": "q38-nvfp4",
       "model": "Qwen3.8-27B",
@@ -2628,7 +2678,7 @@
       }
     },
     {
-      "label": "Qwen3.8 FP8 → NVFP4 + fp8 KV",
+      "label": "Qwen3.8 FP8 \u2192 NVFP4 + fp8 KV",
       "a": "q38-fp8",
       "b": "q38-nvfp4-kvfp8",
       "model": "Qwen3.8-27B",
@@ -2770,7 +2820,7 @@
       }
     },
     {
-      "label": "Qwen3.8 NVFP4 bf16 KV → fp8 KV",
+      "label": "Qwen3.8 NVFP4 bf16 KV \u2192 fp8 KV",
       "a": "q38-nvfp4",
       "b": "q38-nvfp4-kvfp8",
       "model": "Qwen3.8-27B",
@@ -2913,7 +2963,7 @@
       "notes": "Both sides NVFP4; isolates the fp8 KV cache cost on the dense model"
     },
     {
-      "label": "Qwen3.8 FP8 → NVFP4, CUDA graphs",
+      "label": "Qwen3.8 FP8 \u2192 NVFP4, CUDA graphs",
       "a": "q38-fp8",
       "b": "q38-nvfp4-graphs",
       "model": "Qwen3.8-27B",
@@ -3055,7 +3105,7 @@
       }
     },
     {
-      "label": "Qwen3.8 NVFP4 eager → CUDA graphs",
+      "label": "Qwen3.8 NVFP4 eager \u2192 CUDA graphs",
       "a": "q38-nvfp4",
       "b": "q38-nvfp4-graphs",
       "model": "Qwen3.8-27B",
@@ -3199,7 +3249,7 @@
       "notes": "Both sides NVFP4, bf16 KV; same weights, different kernel path (torch.compile + CUDA graphs, text-only, seqs 32). The server is deterministic so this is the between-configuration floor on the W4A4 model, not run-to-run noise."
     },
     {
-      "label": "Qwen3.8 FP8 → NVFP4 + MTP",
+      "label": "Qwen3.8 FP8 \u2192 NVFP4 + MTP",
       "a": "q38-fp8",
       "b": "q38-nvfp4-mtp",
       "model": "Qwen3.8-27B",

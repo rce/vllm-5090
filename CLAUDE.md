@@ -3,7 +3,8 @@ Basic project structure
 ```
 Containerfile            vLLM is run in a container to easily pin versions etc
 profiles/                One env file per model configuration, fed to the container by run.sh
-bench.py                 Synthetic concurrency sweep against a running server
+bench.py                 Synthetic concurrency sweep against a running server; --single measures one stream and describes the server (the `runs` table)
+runs.sh                  Re-measures the `runs` table for every configuration, starting and stopping each server
 quality.py               Divergence probe: does a flag change what the model says? (docs/divergence.md)
 quality/prompts.jsonl    The fixed prompt set the probe scores; captures land in quality/captures/ (untracked)
 agentic.py               Tool-call smoke checks and a replayed agent-loop benchmark (warm vs cold prefix cache)
@@ -46,7 +47,10 @@ raising it rather than rewriting the human's voice.
 `bench.py` is the standard measurement, so numbers stay comparable between
 configurations. Do not hand-roll a one-off timing script and report from it;
 run the sweep and merge into `docs/results.json`. Anything ad-hoc is a finding
-for `agent-notes/`, not a benchmark result.
+for `agent-notes/`, not a benchmark result. The page's decode-throughput and
+KV-pool charts (`runs`) come from `bench.py --single`, driven for every
+configuration by `runs.sh`; add a line there for a new configuration rather
+than editing `results.json` by hand.
 
 `quality.py` is the equivalent for "is it still the same model". Run
 `quality.py jitter` on a configuration before trusting any comparison against
