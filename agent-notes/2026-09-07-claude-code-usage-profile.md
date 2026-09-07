@@ -373,8 +373,10 @@ context ran at 261–266 tok/s against 290 at 2K.
 The full chain ran the same day: five configurations × typical and heavy
 sessions, the MoE also at its native 262 144 window (`MAX_MODEL_LEN=262144
 ./run.sh -p qwen3.6-35b-a3b`; the KV pool of 370K tokens holds 1.4 such
-sessions). Entries are in `docs/results.json` under `loops` with `shape` =
-typical / heavy, and on the page under the loop section's Shape chips.
+sessions). Entries are in `docs/agentic.json` under `loops` with `shape` =
+typical / heavy, and on `docs/agentic.html` under the loop section's Shape
+chips (the agentic results moved out of `results.json` to their own page
+the same day).
 
 ### Typical session (35 turns, context 0.9K → 66K, two resets), one agent
 

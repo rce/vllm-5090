@@ -29,10 +29,13 @@ Two subcommands, both stdlib-only:
           whose context does not fit the server's window are skipped and
           counted, because that too is a result.
 
-  ./agentic.py tools --out docs/results.json --label "qwen3.6-35b-a3b"
-  ./agentic.py loop  --out docs/results.json --label "qwen3.6-35b-a3b" --agents 1,4
-  ./agentic.py loop  --out docs/results.json --label "qwen3.6-35b-a3b · typical session" \\
+  ./agentic.py tools --out docs/agentic.json --label "qwen3.6-35b-a3b"
+  ./agentic.py loop  --out docs/agentic.json --label "qwen3.6-35b-a3b" --agents 1,4
+  ./agentic.py loop  --out docs/agentic.json --label "qwen3.6-35b-a3b · typical session" \\
                      --profile docs/usage.json --session typical --agents 1
+
+Results merge into docs/agentic.json (the agentic page's data), not the LLM
+serving results in docs/results.json.
 """
 
 import argparse

@@ -11,9 +11,10 @@ usage.py                 Reduces Claude Code telemetry exports to docs/usage.jso
 Containerfile.video      diffusers on top of the vLLM image, for the video generation side
 video.sh / video.py      Video generation length/speed sweep: how long a clip costs, how long a clip fits
 docs/                    Publicly viewable interactive pages for browsing benchmark results
-docs/index.html          The LLM serving page; docs/video.html is the video generation page
-docs/results.json        The actual LLM benchmark results
-docs/usage.json          Usage profile from real Claude Code sessions (counts only), shown on the page and replayed by agentic.py
+docs/index.html          The LLM serving page; docs/agentic.html and docs/video.html are the other two
+docs/results.json        The actual LLM benchmark results (runs, sweeps, divergence)
+docs/agentic.json        The agentic results (toolcalls, loops), shown by docs/agentic.html
+docs/usage.json          Usage profile from real Claude Code sessions (counts only), shown on the agentic page and replayed by agentic.py
 docs/video.json          The video generation results, same idea, separate file and page
 docs/style.css, charts.js  Shared by both pages: the stylesheet, the tooltip and the line chart
 README.md                Human written document presenting the project and repository
@@ -56,7 +57,8 @@ the same way sweeps do; the raw captures do not go in git.
 `agentic.py` covers the agent-shaped questions: `tools` checks that structured
 tool calls survive the server's parsers, `loop` replays a growing coding-agent
 transcript and reports per-turn TTFT with and without prefix caching. Both merge
-into `docs/results.json` (`toolcalls`, `loops`). `loop --profile docs/usage.json`
+into `docs/agentic.json` (`toolcalls`, `loops`), which `docs/agentic.html` shows
+apart from the serving results. `loop --profile docs/usage.json`
 replays a real session from the usage profile instead of the synthetic
 transcript; `usage.py` builds that profile from a Claude Code telemetry export
 (the queries are in `agent-notes/2026-09-07-claude-code-usage-profile.md`).

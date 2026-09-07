@@ -2,7 +2,7 @@
 
 Two new repeatable measurements in `agentic.py`, run once on each of the four
 configurations recommended as standard comparison points. Everything here is
-merged into `docs/results.json` under `toolcalls` and `loops` and shown on the
+merged into `docs/agentic.json` (originally `docs/results.json`) under `toolcalls` and `loops` and shown on the
 results page.
 
 The four configurations:
@@ -172,8 +172,8 @@ the ranking.
 ## Running it
 
 ```
-./agentic.py tools --label "<config>" --out docs/results.json --dim seqs=32 --dim graphs=on
-./agentic.py loop  --label "<config>" --out docs/results.json --agents 1,4 --dim seqs=32 --dim graphs=on
+./agentic.py tools --label "<config>" --out docs/agentic.json --dim seqs=32 --dim graphs=on
+./agentic.py loop  --label "<config>" --out docs/agentic.json --agents 1,4 --dim seqs=32 --dim graphs=on
 ```
 
 The loop takes ~2 min on the MoEs, ~6 min on the 27B text-only and ~10 min on

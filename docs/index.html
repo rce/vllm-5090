@@ -11,7 +11,7 @@
 <body>
 <div class="wrap">
   <header>
-    <nav class="pages" aria-label="Result pages"><span>LLM serving</span><span class="sep"></span><a href="video.html">Video generation</a></nav>
+    <nav class="pages" aria-label="Result pages"><span>LLM serving</span><span class="sep"></span><a href="agentic.html">Agentic loops</a><span class="sep"></span><a href="video.html">Video generation</a></nav>
     <h1>vLLM on one RTX 5090</h1>
     <p>Serving Qwen3.x locally on a single 32 GiB Blackwell card. Every number here was
        measured on that machine — single-stream decode, 300-token completions, thinking
@@ -184,106 +184,6 @@
             </tr>
           </thead>
           <tbody id="jitterBody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card" id="toolSection" hidden>
-      <h2>Does tool calling work through the server?</h2>
-      <p class="sub">Six short requests through the OpenAI-compatible endpoint with two tools
-        declared: does the server return structured <code>tool_calls</code>, use a tool result,
-        make two calls in one turn, stay quiet when no tool is needed, stream a call, and copy a
-        path argument exactly. A fail is usually the parser, not the model. Produced by
-        <code>agentic.py tools</code>.</p>
-      <div class="scroll">
-        <table>
-          <thead id="toolHead"></thead>
-          <tbody id="toolBody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card" id="loopSection" hidden>
-      <h2>Agentic loop</h2>
-      <p class="sub">A replayed coding-agent transcript: a 600-word system prompt, then sixteen
-        turns of "read this file" tool calls, each one adding ~1.2K tokens of code to the
-        context. After every turn the server is asked for the next step. <em>Warm</em> lets the
-        server reuse what it already computed for the previous turn; <em>cold</em> defeats that
-        so every turn is prefilled from scratch. The gap between them is what prefix caching is
-        worth. Produced by <code>agentic.py loop</code>.</p>
-      <p class="note-inline">Colours identify <em>configurations</em>. Solid lines are warm,
-        dashed are cold. <em>Synthetic</em> is the transcript above; <em>typical</em> and
-        <em>heavy</em> replay real sessions from the usage profile below, turn by turn, with the
-        context and output sizes they actually had. Turns whose context does not fit the
-        server's window are skipped and counted.</p>
-      <div class="dimbar" id="loopbar" role="group" aria-label="Loop filters"></div>
-      <ul class="legend" id="legendLoop"></ul>
-
-      <h3 style="font-size:13px;margin:22px 0 2px">Time to first token per turn</h3>
-      <p class="sub">What the agent waits before the next step starts arriving, as the
-        context grows turn by turn. Lower and flatter is better.</p>
-      <svg class="linechart" id="chartLoop" viewBox="0 0 880 300" role="img"></svg>
-      <div class="axname">turn</div>
-
-      <h3 style="font-size:13px;margin:26px 0 10px">Every run</h3>
-      <div class="scroll">
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">Configuration</th>
-              <th scope="col">Shape</th>
-              <th scope="col">Agents</th>
-              <th scope="col">Mode</th>
-              <th scope="col">Turns</th>
-              <th scope="col">Over window</th>
-              <th scope="col">TTFT turn 1</th>
-              <th scope="col">TTFT last turn</th>
-              <th scope="col">TTFT p95</th>
-              <th scope="col">Context at end</th>
-              <th scope="col">Cache hit</th>
-              <th scope="col">Turns / min</th>
-            </tr>
-          </thead>
-          <tbody id="loopBody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card" id="usageSection" hidden>
-      <h2>What real sessions look like</h2>
-      <p class="sub" id="usageSub"></p>
-      <p class="note-inline">Token counts are the provider's; the local tokenizer lands within
-        roughly a tenth of them. Produced by <code>usage.py</code> from the
-        <code>claude_code.api_request</code> events; no prompt text or identity leaves the logs.</p>
-      <div class="hero" id="usageHero"></div>
-
-      <h3 style="font-size:13px;margin:26px 0 2px">Context per request</h3>
-      <p class="sub">What the server has to hold for one request: the conversation so far,
-        cached or not. Bars are 20K-token bins.</p>
-      <div class="chart" id="chartUsageCtx"></div>
-      <div class="axis"><div class="inner" id="axisUsageCtx"></div></div>
-      <div class="axis-title">requests</div>
-
-      <h3 style="font-size:13px;margin:26px 0 2px">Output per turn</h3>
-      <p class="sub">Tokens generated per request, in powers of two. The sweeps above force 256.</p>
-      <div class="chart" id="chartUsageOut"></div>
-      <div class="axis"><div class="inner" id="axisUsageOut"></div></div>
-      <div class="axis-title">requests</div>
-
-      <h3 style="font-size:13px;margin:26px 0 10px">Tools called</h3>
-      <div class="scroll">
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">Tool</th>
-              <th scope="col">Calls</th>
-              <th scope="col">Failed</th>
-              <th scope="col">p50</th>
-              <th scope="col">p90</th>
-              <th scope="col">max</th>
-            </tr>
-          </thead>
-          <tbody id="usageTools"></tbody>
         </table>
       </div>
     </div>
@@ -758,281 +658,6 @@
     }
   }
 
-  // --- tool calling -------------------------------------------------------
-  // One row per configuration, one column per check. The glyph carries the
-  // result; the tooltip carries what the model actually returned.
-  const toolcalls = data.toolcalls || [];
-  const CHECK_LABEL = {
-    single_call: 'One call', tool_result_roundtrip: 'Uses result', parallel_calls: 'Two calls',
-    no_false_call: 'No false call', streaming_call: 'Streaming', path_argument: 'Exact path',
-  };
-
-  function renderToolcalls(filter) {
-    const section = $('toolSection');
-    const list = toolcalls.filter(t => filter === 'all' || t.model === filter);
-    section.hidden = !list.length;
-    if (!list.length) return;
-    const names = [...new Set(list.flatMap(t => t.checks.map(c => c.name)))];
-
-    const th = $('toolHead');
-    th.innerHTML = '';
-    const hr = document.createElement('tr');
-    for (const h of ['Configuration', 'Passed', ...names.map(n => CHECK_LABEL[n] || n), 'Reasoning field']) {
-      const el = document.createElement('th');
-      el.scope = 'col';
-      el.textContent = h;
-      hr.appendChild(el);
-    }
-    th.appendChild(hr);
-
-    const tb = $('toolBody');
-    tb.innerHTML = '';
-    for (const t of list) {
-      const tr = document.createElement('tr');
-      const first = document.createElement('td');
-      first.textContent = t.label;
-      if (t.notes) {
-        const sm = document.createElement('span');
-        sm.className = 'sm';
-        sm.textContent = t.notes;
-        first.appendChild(sm);
-      }
-      tr.appendChild(first);
-      const passed = document.createElement('td');
-      passed.textContent = t.passed + '/' + t.total;
-      tr.appendChild(passed);
-      for (const n of names) {
-        const c = t.checks.find(c => c.name === n);
-        const td = document.createElement('td');
-        if (!c) {
-          td.textContent = '—';
-        } else {
-          td.textContent = c.pass ? '✓' : '✗';
-          td.title = c.detail + (c.latency_s != null ? ' · ' + c.latency_s.toFixed(2) + ' s' : '');
-          const sm = document.createElement('span');
-          sm.className = 'sm';
-          sm.textContent = c.latency_s != null ? c.latency_s.toFixed(2) + ' s' : '';
-          td.appendChild(sm);
-        }
-        tr.appendChild(td);
-      }
-      const rf = document.createElement('td');
-      rf.textContent = t.reasoning_field_seen == null ? '—' : t.reasoning_field_seen ? 'yes' : 'no';
-      tr.appendChild(rf);
-      tb.appendChild(tr);
-    }
-  }
-
-  // --- agentic loop -------------------------------------------------------
-  // Colour follows the configuration, line style follows the mode, and the
-  // agent-count chips pick which level is charted. The table shows all of them.
-  // Colour follows the configuration *within a shape*: synthetic and replayed
-  // sessions are never charted together, so each shape gets the slots afresh.
-  const loopShape = (l) => (l.dimensions && l.dimensions.shape) || 'synthetic';
-  const SHAPE_ORDER = ['synthetic', 'typical', 'heavy'];
-  const loopShapes = [...new Set((data.loops || []).map(loopShape))]
-    .sort((a, b) => SHAPE_ORDER.indexOf(a) - SHAPE_ORDER.indexOf(b));
-  const loops = [];
-  for (const shape of loopShapes) {
-    (data.loops || []).filter(l => loopShape(l) === shape)
-      .forEach((l, i) => loops.push({ ...l, shape, color: SWEEP_COLORS[i % SWEEP_COLORS.length] }));
-  }
-  const loopAgentLevels = [...new Set(loops.flatMap(l => l.levels.map(v => v.agents)))].sort((a, b) => a - b);
-  let loopAgents = loopAgentLevels[0];
-  let loopShapeSel = loopShapes[0];
-
-  function loopChips(bar, label, values, current, onPick) {
-    const g = document.createElement('div');
-    g.className = 'dimgroup';
-    const lab = document.createElement('span');
-    lab.className = 'glab';
-    lab.textContent = label;
-    g.appendChild(lab);
-    for (const v of values) {
-      const b = document.createElement('button');
-      b.className = 'chip';
-      b.type = 'button';
-      b.textContent = String(v);
-      b.setAttribute('aria-pressed', String(v === current));
-      b.addEventListener('click', () => {
-        onPick(v);
-        for (const o of g.querySelectorAll('.chip')) o.setAttribute('aria-pressed', String(o === b));
-        hideTip();
-        renderLoops(currentModelFilter);
-      });
-      g.appendChild(b);
-    }
-    bar.appendChild(g);
-  }
-
-  function buildLoopBar() {
-    const bar = $('loopbar');
-    bar.innerHTML = '';
-    if (loopShapes.length > 1) loopChips(bar, 'Shape', loopShapes, loopShapeSel, v => { loopShapeSel = v; });
-    if (loopAgentLevels.length > 1) loopChips(bar, 'Agents', loopAgentLevels, loopAgents, v => { loopAgents = v; });
-  }
-
-  function renderLoops(filter) {
-    const section = $('loopSection');
-    const list = loops.filter(l => (filter === 'all' || l.model === filter) && l.shape === loopShapeSel);
-    section.hidden = !loops.length;
-    if (!list.length) {
-      Charts.legend($('legendLoop'), []);
-      $('chartLoop').innerHTML = '';
-      $('loopBody').innerHTML = '';
-      return;
-    }
-
-    Charts.legend($('legendLoop'), list);
-
-    const series = [];
-    for (const l of list) {
-      for (const mode of ['warm', 'cold']) {
-        const lv = l.levels.find(v => v.agents === loopAgents && v.mode === mode && v.per_turn && v.per_turn.length);
-        if (!lv) continue;
-        series.push({ label: l.label + ' · ' + mode, color: l.color, dash: mode === 'cold', levels: lv.per_turn });
-      }
-    }
-    drawLine($('chartLoop'), series, r => r.ttft_p50_s, v => v.toFixed(2) + ' s', {
-      xKey: 'turn',
-      xTitle: (t) => {
-        const ctx = series.map(s => s.levels.find(r => r.turn === t)).find(Boolean);
-        return 'turn ' + t + (ctx ? ' · ' + fmt(ctx.context_tokens) + ' tokens of context' : '');
-      },
-    });
-
-    const tb = $('loopBody');
-    tb.innerHTML = '';
-    for (const l of list) {
-      for (const v of l.levels) {
-        const tr = document.createElement('tr');
-        const first = document.createElement('td');
-        const dot = document.createElement('span');
-        dot.className = 'dot';
-        dot.style.background = l.color;
-        first.append(dot, document.createTextNode(l.label));
-        tr.appendChild(first);
-        const cells = [
-          l.shape,
-          v.agents,
-          v.mode,
-          v.turns_ok + '/' + v.turns_requested,
-          v.turns_over_window != null ? v.turns_over_window : '—',
-          v.ttft_first_turn_s != null ? v.ttft_first_turn_s.toFixed(3) + ' s' : '—',
-          v.ttft_last_turn_s != null ? v.ttft_last_turn_s.toFixed(3) + ' s' : '—',
-          v.ttft_p95_s != null ? v.ttft_p95_s.toFixed(3) + ' s' : '—',
-          v.context_tokens_last != null ? fmt(v.context_tokens_last) : '—',
-          v.prefix_cache_hit_rate != null ? (v.prefix_cache_hit_rate * 100).toFixed(1) + '%' : '—',
-          v.turns_per_minute != null ? v.turns_per_minute.toFixed(1) : '—',
-        ];
-        for (const c of cells) {
-          const td = document.createElement('td');
-          td.textContent = c;
-          tr.appendChild(td);
-        }
-        tb.appendChild(tr);
-      }
-    }
-  }
-
-  // --- usage profile ------------------------------------------------------
-  // docs/usage.json is optional: real-session shape from Claude Code telemetry,
-  // the source of the replayed loop shapes above. Nothing here is per model.
-  function histRows(host, axisHost, bins, label, color) {
-    host.innerHTML = '';
-    axisHost.innerHTML = '';
-    const max = Math.max(...bins.map(b => b.n));
-    for (const b of bins) {
-      const row = document.createElement('div');
-      row.className = 'row';
-      const name = document.createElement('div');
-      name.className = 'name';
-      name.textContent = label(b);
-      const track = document.createElement('div');
-      track.className = 'track';
-      const bar = document.createElement('div');
-      bar.className = 'bar';
-      bar.style.width = Math.max(0.4, (b.n / max) * 100) + '%';
-      bar.style.background = color;
-      const val = document.createElement('span');
-      val.className = 'val';
-      val.textContent = fmt(b.n);
-      track.append(bar, val);
-      track.setAttribute('aria-label', label(b) + ': ' + b.n);
-      row.append(name, track);
-      host.appendChild(row);
-    }
-    for (const t of [0, max / 2, max]) {
-      const s = document.createElement('span');
-      s.textContent = fmt(Math.round(t));
-      axisHost.appendChild(s);
-    }
-    const cols = getComputedStyle(host.querySelector('.row')).gridTemplateColumns.split(' ');
-    axisHost.parentElement.style.marginLeft = cols.length > 1 ? cols[0] : '0px';
-  }
-
-  async function renderUsage() {
-    let u;
-    try {
-      const res = await fetch('usage.json', { cache: 'no-cache' });
-      if (!res.ok) return;
-      u = await res.json();
-    } catch (e) { return; }
-    const section = $('usageSection');
-    section.hidden = false;
-    const s = u.source, rq = u.requests, p = u.prompts;
-    $('usageSub').textContent = `${s.description}: ${fmt(s.requests)} requests, ${fmt(s.prompts)} human prompts ` +
-      `and ${fmt(s.tool_calls)} tool calls in ${s.sessions} sessions, ${s.from} to ${s.to}. ` +
-      'This is what the loop above is asked to keep up with.';
-    const windowMax = Math.max(0, ...(data.runs || []).map(r => r.max_model_len || 0),
-                                  ...(data.loops || []).map(l => l.max_model_len || 0));
-    const within = rq.context_hist_20k.filter(b => b.to <= windowMax).reduce((a, b) => a + b.n, 0);
-    const stats = [
-      ['Context per request', fmt(rq.context.p50), `median · p90 ${fmt(rq.context.p90)} · max ${fmt(rq.context.max)} tokens`],
-      ['Fits the largest window', Math.round(within / s.requests * 100) + '%',
-       `of requests are under ${fmt(windowMax)} tokens, the widest context measured above`],
-      ['Output per turn', fmt(rq.output.p50), `median · p90 ${fmt(rq.output.p90)} · max ${fmt(rq.output.max)} tokens`],
-      ['Prefix cache share', (rq.cache_share * 100).toFixed(0) + '%', `of context tokens were cached; ${rq.cold_requests} requests started cold`],
-      ['Requests per prompt', fmt(p.requests_per_prompt.p50), `median · p90 ${fmt(p.requests_per_prompt.p90)} model calls per human message`],
-      ['Between requests', u.cadence.gap_s.p50 + ' s', `median gap · p90 ${u.cadence.gap_s.p90} s · ${u.cadence.parallel_pairs} overlapping pairs`],
-    ];
-    const hero = $('usageHero');
-    hero.innerHTML = '';
-    for (const [label, value, note] of stats) {
-      const st = document.createElement('div');
-      st.className = 'stat';
-      const l = document.createElement('div'); l.className = 'label'; l.textContent = label;
-      const v = document.createElement('div'); v.className = 'value'; v.textContent = value; v.style.fontSize = '30px';
-      const n = document.createElement('div'); n.className = 'note'; n.textContent = note;
-      st.append(l, v, n);
-      hero.appendChild(st);
-    }
-    histRows($('chartUsageCtx'), $('axisUsageCtx'), rq.context_hist_20k,
-      b => `${b.from / 1000}K – ${b.to / 1000}K`, 'var(--series-1)');
-    histRows($('chartUsageOut'), $('axisUsageOut'), rq.output_hist_log2,
-      b => `${fmt(b.from)} – ${fmt(b.to)}`, 'var(--series-2)');
-    const tb = $('usageTools');
-    tb.innerHTML = '';
-    const byTool = {};
-    for (const t of u.tools) {
-      const e = byTool[t.tool] || (byTool[t.tool] = { calls: 0, failed: 0, p50: null, p90: null, max: 0 });
-      e.calls += t.calls;
-      if (!t.success) e.failed += t.calls;
-      else { e.p50 = t.ms_p50; e.p90 = t.ms_p90; }
-      e.max = Math.max(e.max, t.ms_max || 0);
-    }
-    for (const [name, e] of Object.entries(byTool).sort((a, b) => b[1].calls - a[1].calls)) {
-      const tr = document.createElement('tr');
-      const ms = (v) => v == null ? '—' : v >= 1000 ? (v / 1000).toFixed(1) + ' s' : v + ' ms';
-      for (const c of [name, fmt(e.calls), e.failed || '—', ms(e.p50), ms(e.p90), ms(e.max)]) {
-        const td = document.createElement('td');
-        td.textContent = c;
-        tr.appendChild(td);
-      }
-      tb.appendChild(tr);
-    }
-  }
-
   // --- render + filter ----------------------------------------------------
   function render(filter) {
     const list = filter === 'all' ? runs : runs.filter(r => r.model === filter);
@@ -1048,8 +673,6 @@
     drawTable(list);
     renderSweeps(filter);
     renderDivergence(filter);
-    renderToolcalls(filter);
-    renderLoops(filter);
   }
 
   // Model chips come from every section's data, so a model that only has a
@@ -1059,8 +682,6 @@
     ...sweeps.map(s => s.model),
     ...(data.divergence || []).map(d => d.model),
     ...(data.jitter || []).map(j => j.model),
-    ...(data.toolcalls || []).map(t => t.model),
-    ...(data.loops || []).map(l => l.model),
   ].filter(Boolean))];
   for (const m of allModels) {
     const b = document.createElement('button');
@@ -1084,16 +705,14 @@
     });
   }
   buildDimBar();
-  buildLoopBar();
   render('all');
-  renderUsage();
 
   // The line charts are sized in real pixels, so they need redrawing when the
   // viewport changes. Debounced; the bar charts are CSS-driven and need nothing.
   let resizeTimer;
   addEventListener('resize', () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => { hideTip(); renderSweeps(currentModelFilter); renderLoops(currentModelFilter); }, 150);
+    resizeTimer = setTimeout(() => { hideTip(); renderSweeps(currentModelFilter); }, 150);
   });
 
   const f = $('footer');
