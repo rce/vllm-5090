@@ -305,6 +305,143 @@ warm and cold as today. Labels and dimensions stay consistent with the
 existing `loops` entries so the four standard configs can be compared
 against both the synthetic and the real shape.
 
-## Results
+## Results: the profile
 
-Not yet run.
+The user ran the raw export against the work account's logs the same day:
+three days (2026-09-04 to 06), 1160 rows, 518 API requests, 108 human
+prompts, 534 tool calls. The `session.id` column came back empty (the
+attribute is named differently in that pipeline), so sessions were split
+on 30-minute gaps: six of them, two long ones (171 and 199 requests, two
+and five and a half hours). `usage.py` reduced it to `docs/usage.json`; the
+page shows it under "What real sessions look like".
+
+| per request | p10 | p50 | p90 | p99 | max |
+| --- | --- | --- | --- | --- | --- |
+| context (input + cache read + cache create) | 38 033 | 105 344 | 223 456 | 267 315 | 274 585 |
+| fresh prefill (input + cache create) | 398 | 1 154 | 6 611 | 117 360 | 207 111 |
+| output | 146 | 520 | 2 235 | 8 751 | 14 207 |
+| provider duration, s | 3.7 | 9.3 | 31.3 | 93.9 | 175 |
+
+- **Context is the story.** The median request already carries 105K
+  tokens; 71% of requests are over the 64K window every local
+  configuration runs at, and 92% are over the dense 27B's 32K. The context
+  histogram is flat from 40K to 280K: sessions grow until compaction, which
+  shows up as a drop of 50–99K, seven to thirteen times in a long session.
+  The synthetic loop's 20K endpoint is where real sessions *start* (one
+  fresh session went 905 → 44K in twelve requests).
+- **Fresh prefill per turn matches the synthetic guess.** Median 1.15K
+  tokens, which is the 1.2K the loop adds per turn. The tail is the
+  compactions and session starts: p99 117K, 13 of 518 requests cold.
+  Overall 96.1% of context tokens came from the provider's prefix cache.
+- **Output is 4× the synthetic 128.** Median 520, p90 2.2K, p99 8.7K, and
+  the distribution is wide: 256–1023 is the mode (266 of 518), but 65
+  requests emitted 2K–14K (file writes, long answers). The sweeps' fixed
+  256 is the p25.
+- **Cadence.** Median gap between one request's end and the next one's
+  start is 3.2 s (tool time); p90 128 s (the human). 43 of 512 consecutive
+  pairs overlap: parallel subagents or background tasks, 8% of turns. Time
+  in flight per session is 10–30% of wall time.
+- **A human prompt costs 3 model calls at the median, 11 at p90, 26 at
+  most.** 19 of 108 prompts needed exactly one; 36 needed six or more.
+- **Tools.** Bash is 76% of calls (389 ok, 15 failed), p50 0.4 s, p90 23 s,
+  max 2 min. Edit and Write are instant; Read 16 calls. The rest is
+  AskUserQuestion, Skill, ToolSearch, one WebSearch.
+- **Provider output speed**, as seen from the client (output tokens over
+  request duration, so it includes prefill and queueing): median 61 tok/s,
+  p90 87. The local MoE decodes at 260–290 tok/s single-stream; the dense
+  27B at 25–50.
+
+The replay sessions: *typical* is the 35-request, 18-minute session
+(context 919 → 66K, two resets, 20.5K output tokens); *heavy* is the
+199-request, 5.5-hour one (65K → 275K → 47K, ten resets, 215K output
+tokens). At a 64K window 33 of the typical session's turns fit and 55 of
+the heavy one's; at 256K, all but 11 of the heavy session's.
+
+## Results: the replay
+
+First trial on the 64K MoE, typical session, one agent, before the
+over-window fix: 24 of 33 turns ran; the 25th needed 63.3K + 2.2K and got
+HTTP 400, and the replay stopped. Now such a turn is skipped and counted.
+Measured contexts track the targets within 1% after the first turn (the
+first is short by 12% because the filler is calibrated from that response).
+
+Warm, the first turn (a 50K cold prefill) took 2.9 s; turns 2–8 at
+59–64K took 0.23–0.41 s each, the prefix cache hit 83.7%. Cold, every turn
+at 60K took 3.4–4.1 s: 5.7K prefill tokens per second. Decode at 60K of
+context ran at 261–266 tok/s against 290 at 2K.
+
+The full chain ran the same day: five configurations × typical and heavy
+sessions, the MoE also at its native 262 144 window (`MAX_MODEL_LEN=262144
+./run.sh -p qwen3.6-35b-a3b`; the KV pool of 370K tokens holds 1.4 such
+sessions). Entries are in `docs/results.json` under `loops` with `shape` =
+typical / heavy, and on the page under the loop section's Shape chips.
+
+### Typical session (35 turns, context 0.9K → 66K, two resets), one agent
+
+| configuration | window | turns in | warm TTFT last / mean / p95 | cache hit | cold TTFT last / mean / p95 | decode tok/s | warm turns/min |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| qwen3.6-35b-a3b | 64K | 32 of 35 | 0.28 / 0.77 / 2.9 s | 81% | 3.3 / 3.2 / 4.1 s | 267 | 20.7 |
+| qwen3.6-35b-a3b 256K | 256K | 35 of 35 | 0.29 / 0.54 / 2.3 s | 89% | 4.5 / 3.4 / 4.4 s | 266 | 21.7 |
+| nemotron-3.5-lightning | 64K | 32 of 35 | 0.18 / 0.72 / 2.8 s | 81% | 3.3 / 3.2 / 4.0 s | 386 | 27.2 |
+| qwen3.8-27b text-only, graphs | 32K | 2 of 35 | — | — | — | 174 | — |
+| qwen3.8-27b default | 32K | 2 of 35 | — | — | — | 93 | — |
+
+Four agents in parallel on the same session (each its own copy): MoE warm
+last-turn TTFT 1.16 s, p95 9.0 s, 37.6 turns/min across the four, decode
+152 tok/s per stream; Nemotron 0.17 s, p95 8.7 s, 48.3 turns/min, 181 per
+stream. Cold with four agents is 3.3–5.2 s per turn at the end and 55 tok/s
+per stream on the MoE: four 60K prefills share the card.
+
+### Heavy session (199 turns, context 0.9K → 275K, ten resets), one agent
+
+| configuration | window | turns in | warm TTFT last / mean / p95 / max | cache hit | cold mean / p95 / max | warm wall | cold wall |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| qwen3.6-35b-a3b 256K | 256K | 188 of 199 | 0.51 / 0.86 / 2.3 / 13.4 s | 94% | 11.2 / 27.1 / 42.2 s | 17.3 min | 49.9 min |
+| qwen3.6-35b-a3b | 64K | 55 of 199 | 0.52 / 0.62 / 2.4 / 3.4 s | 80% | 2.4 / 3.5 / 4.1 s | 2.9 min | 4.6 min |
+| nemotron-3.5-lightning | 64K | 55 of 199 | 0.34 / 0.56 / 2.3 / 3.3 s | 80% | 2.4 / 3.5 / 4.0 s | 2.2 min | 3.9 min |
+| qwen3.8-27b (either) | 32K | 5 of 199 | — | — | — | — | — |
+
+The provider's own API time for these sessions, from the telemetry
+(`duration_ms` summed): typical 5.5 min of a 18.5-minute session (30% of
+wall), heavy 47 min of 335 (14%). The local MoE at 256K replays the typical
+session's model turns in 1.6 min warm and the heavy one in 17 min warm,
+against 5.5 and 47 min at the provider, with the same context and output
+sizes. That is not a like-for-like model comparison (nothing here scores the
+answers), but it says the serving side is not the bottleneck: the local
+model would have spent 9% and 5% of those sessions' wall time.
+
+### What the replay says
+
+- **The window is the finding.** At 64K the typical session loses 3 of 35
+  turns and the heavy one 144 of 199; at 32K the dense 27B configurations
+  serve only the tiny Haiku-class turns (2 and 5). The MoE at 256K serves
+  everything but the eleven turns above 262K, and the heavy session runs
+  warm at a 94% cache hit, 0.5 s to first token at the end and a 2.3 s p95.
+  Its worst warm turn is 13.4 s, turn 85, where the real session's context
+  jumped from 37K to 147K with only 388 fresh tokens (a cached transcript
+  came back at the provider); in the replay that is a 110K prefill. Cold,
+  the session is 11 s per turn on average and 42 s at 260K, which is what
+  serving without a prefix cache (or with one that evicts) costs.
+- **Warm TTFT is flat in context size; the rebuilds are the spikes.** Every
+  configuration's warm curve sits at 0.2–0.5 s across 40–70K of context and
+  jumps to 2–3.5 s on the turn after each reset (the typical session resets
+  at turns 9 and 16, so turns 10 and 17 rebuild 45K of context cold), and on
+  the 64K servers also after every skipped over-window turn (26 and 34),
+  because the replay starts a fresh conversation there too. The synthetic
+  loop's smoothly rising TTFT never showed this shape.
+- **Nemotron leads on decode and warm latency, ties on prefill.** 386 vs
+  267 tok/s single-stream at 56K context, 0.18 vs 0.28 s warm TTFT; cold
+  turns are the same 3.2 s on both, so prefill throughput (~5.7K tok/s at
+  60K) is the same for the two A3B models.
+- **Decode holds up with context.** The MoE decodes at 265 tok/s at 60K and
+  247 tok/s averaged over the heavy session (contexts to 275K), against 290
+  at 2K.
+- **Four agents cost 4× on the reset turns and little elsewhere.** Warm
+  last-turn TTFT goes 0.28 → 1.16 s (MoE) and 0.18 → 0.17 s (Nemotron); the
+  p95 is the reset turns at 8–9 s where four 60K prefills queue.
+- **The 64K entries' over-window counts include one runtime skip each**: a
+  turn the plan thought would fit, whose measured context plus output came
+  to 65 537 tokens on the local tokenizer.
+
+Trial numbers before the chain (24-turn partial run) are superseded by the
+table above.
